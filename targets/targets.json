@@ -3324,6 +3324,9 @@
             "MCU_STM32L1"
         ],
         "public": false,
+        "extra_labels_add": [
+            "STM32L151xC"
+        ],
         "macros_add": [
             "STM32L151xC"
         ]
@@ -3362,6 +3365,9 @@
             "MCU_STM32L1"
         ],
         "public": false,
+        "extra_labels_add": [
+            "STM32L152xC"
+        ],
         "macros_add": [
             "STM32L152xC"
         ]
@@ -3389,6 +3395,9 @@
             "MCU_STM32L1"
         ],
         "public": false,
+        "extra_labels_add": [
+            "STM32L152xE"
+        ],
         "macros_add": [
             "STM32L152xE"
         ]
