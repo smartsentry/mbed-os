@@ -116,6 +116,47 @@ SX126X_LoRaRadio::SX126X_LoRaRadio(PinName mosi,
     _image_calibrated = false;
     _force_image_calibration = false;
     _active_modem = MODEM_LORA;
+	
+	
+	device_variant = get_device_variant();
+	freq_support = get_frequency_support();
+
+#ifdef MBED_CONF_RTOS_PRESENT
+    irq_thread.start(callback(this, &SX126X_LoRaRadio::rf_irq_task));
+#endif
+}
+
+SX126X_LoRaRadio::SX126X_LoRaRadio(PinName mosi,
+                                   PinName miso,
+                                   PinName sclk,
+                                   PinName nss,
+                                   PinName reset,
+                                   PinName dio1,
+                                   PinName busy,
+                                   uint8_t frequency,
+                                   uint8_t device,
+                                   PinName crystal_select,
+                                   PinName ant_switch)
+    : _spi(mosi, miso, sclk),
+      _chip_select(nss, 1),
+      _reset_ctl(reset),
+      _dio1_ctl(dio1, PullNone),
+      _busy(busy, PullNone),
+      freq_support(frequency),
+      device_variant(device),
+      _freq_select(NC),
+      _dev_select(NC),
+      _crystal_select(crystal_select, PullDown),
+      _ant_switch(ant_switch, PIN_INPUT, PullUp, 0)
+#ifdef MBED_CONF_RTOS_PRESENT
+    , irq_thread(osPriorityRealtime, 1024, NULL, "LR-SX126X")
+#endif
+{
+    _radio_events = NULL;
+    _reset_ctl = 1;
+    _image_calibrated = false;
+    _force_image_calibration = false;
+    _active_modem = MODEM_LORA;
 
 #ifdef MBED_CONF_RTOS_PRESENT
     irq_thread.start(callback(this, &SX126X_LoRaRadio::rf_irq_task));
@@ -403,8 +444,6 @@ void SX126X_LoRaRadio::init_radio(radio_events_t *events)
 
     // attach DIO1 interrupt line to its respective ISR
     _dio1_ctl.rise(callback(this, &SX126X_LoRaRadio::dio1_irq_isr));
-
-    uint8_t freq_support = get_frequency_support();
 
     // Hold chip-select high
     _chip_select = 1;
@@ -1050,7 +1089,7 @@ void SX126X_LoRaRadio::set_tx_power(int8_t power)
 {
     uint8_t buf[2];
 
-    if (get_device_variant() == SX1261) {
+    if (device_variant == SX1261) {
         if (power >= 14) {
             set_pa_config(0x04, 0x00, 0x01, 0x01);
             power = 14;
