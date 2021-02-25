@@ -4424,8 +4424,7 @@
         "core": "Cortex-M0",
         "supported_toolchains": [
             "ARM",
-            "GCC_ARM",
-            "IAR"
+            "GCC_ARM"
         ],
         "extra_labels": [
             "ARM_SSG",
@@ -4466,8 +4465,7 @@
         "core": "Cortex-M0+",
         "supported_toolchains": [
             "ARM",
-            "GCC_ARM",
-            "IAR"
+            "GCC_ARM"
         ],
         "extra_labels": [
             "ARM_SSG",
@@ -4506,8 +4504,7 @@
         "core": "Cortex-M3",
         "supported_toolchains": [
             "ARM",
-            "GCC_ARM",
-            "IAR"
+            "GCC_ARM"
         ],
         "extra_labels": [
             "ARM_SSG",
@@ -4547,8 +4544,7 @@
         "core": "Cortex-M4F",
         "supported_toolchains": [
             "ARM",
-            "GCC_ARM",
-            "IAR"
+            "GCC_ARM"
         ],
         "extra_labels": [
             "ARM_SSG",
@@ -4588,8 +4584,7 @@
         "core": "Cortex-M7FD",
         "supported_toolchains": [
             "ARM",
-            "GCC_ARM",
-            "IAR"
+            "GCC_ARM"
         ],
         "extra_labels": [
             "ARM_SSG",
