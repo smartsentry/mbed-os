@@ -116,6 +116,47 @@ SX126X_LoRaRadio::SX126X_LoRaRadio(PinName mosi,
     _image_calibrated = false;
     _force_image_calibration = false;
     _active_modem = MODEM_LORA;
+	
+	
+	device_variant = get_device_variant();
+	freq_support = get_frequency_support();
+
+#ifdef MBED_CONF_RTOS_PRESENT
+    irq_thread.start(callback(this, &SX126X_LoRaRadio::rf_irq_task));
+#endif
+}
+
+SX126X_LoRaRadio::SX126X_LoRaRadio(PinName mosi,
+                                   PinName miso,
+                                   PinName sclk,
+                                   PinName nss,
+                                   PinName reset,
+                                   PinName dio1,
+                                   PinName busy,
+                                   uint8_t frequency,
+                                   uint8_t device,
+                                   PinName crystal_select,
+                                   PinName ant_switch)
+    : _spi(mosi, miso, sclk),
+      _chip_select(nss, 1),
+      _reset_ctl(reset),
+      _dio1_ctl(dio1, PullNone),
+      _busy(busy, PullNone),
+      freq_support(frequency),
+      device_variant(device),
+      _freq_select(PA_2),
+      _dev_select(PA_2),
+      _crystal_select(crystal_select, PullDown),
+      _ant_switch(ant_switch, PIN_INPUT, PullUp, 0)
+#ifdef MBED_CONF_RTOS_PRESENT
+    , irq_thread(osPriorityRealtime, 1024, NULL, "LR-SX126X")
+#endif
+{
+    _radio_events = NULL;
+    _reset_ctl = 1;
+    _image_calibrated = false;
+    _force_image_calibration = false;
+    _active_modem = MODEM_LORA;
 
 #ifdef MBED_CONF_RTOS_PRESENT
     irq_thread.start(callback(this, &SX126X_LoRaRadio::rf_irq_task));
@@ -243,6 +284,35 @@ bool SX126X_LoRaRadio::check_rf_frequency(uint32_t frequency)
 void SX126X_LoRaRadio::set_tx_continuous_wave(uint32_t freq, int8_t power,
                                               uint16_t time)
 {
+	set_channel(freq);
+    set_tx_power(power);
+	if(time)
+	{
+		write_opmode_command( RADIO_SET_TXCONTINUOUSPREAMBLE, 0, 0 );
+	}
+	else
+	{
+		write_opmode_command( RADIO_SET_TXCONTINUOUSWAVE, 0, 0 );
+	}
+	    uint8_t buf[3];
+/*
+    // _tx_timeout in ms should be converted to us and then divided by
+    // 15.625 us. Check data-sheet 13.1.4 SetTX() section.
+    uint32_t timeout_scalled = ceil((time * 1000) / 15.625);
+
+    buf[0] = (uint8_t)((timeout_scalled >> 16) & 0xFF);
+    buf[1] = (uint8_t)((timeout_scalled >> 8) & 0xFF);
+    buf[2] = (uint8_t)(timeout_scalled & 0xFF);
+*/
+	buf[0] = 0x00;//CS hack run forever and use for time for other purposes
+    buf[1] = 0x00;
+    buf[2] = 0x00;
+	
+    _operation_mode = MODE_TX;
+
+    write_opmode_command(RADIO_SET_TX, buf, 3);
+
+
     // This is useless. We even removed the support from our MAC layer.
 }
 
@@ -403,8 +473,6 @@ void SX126X_LoRaRadio::init_radio(radio_events_t *events)
 
     // attach DIO1 interrupt line to its respective ISR
     _dio1_ctl.rise(callback(this, &SX126X_LoRaRadio::dio1_irq_isr));
-
-    uint8_t freq_support = get_frequency_support();
 
     // Hold chip-select high
     _chip_select = 1;
@@ -1050,7 +1118,7 @@ void SX126X_LoRaRadio::set_tx_power(int8_t power)
 {
     uint8_t buf[2];
 
-    if (get_device_variant() == SX1261) {
+    if (device_variant == SX1261) {
         if (power >= 14) {
             set_pa_config(0x04, 0x00, 0x01, 0x01);
             power = 14;
