@@ -64,6 +64,18 @@ public:
                      PinName crystal_select,
                      PinName ant_switch);
 
+    SX126X_LoRaRadio(PinName mosi,
+                     PinName miso,
+                     PinName sclk,
+                     PinName nss,
+                     PinName reset,
+                     PinName dio1,
+                     PinName busy,
+                     uint8_t frequency,
+                     uint8_t device,
+                     PinName crystal_select,
+                     PinName ant_switch);
+
     virtual ~SX126X_LoRaRadio();
 
     /**
@@ -393,6 +405,9 @@ private:
     uint32_t _rx_timeout;
     uint8_t _rx_timeout_in_symbols;
     int8_t _tx_power;
+	uint8_t device_variant;
+	uint8_t freq_support;
+
     bool _image_calibrated;
     bool _force_image_calibration;
     bool _network_mode_public;
