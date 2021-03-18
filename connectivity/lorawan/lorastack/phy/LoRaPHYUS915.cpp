@@ -213,6 +213,7 @@ static const uint8_t max_payloads_with_repeater_US915[] = {11, 53, 125, 242, 242
 
 static const uint16_t fsb_mask[] = MBED_CONF_LORA_FSB_MASK;
 static const uint16_t full_channel_mask [] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x00FF};
+static const uint16_t initial_join_channel_mask [] = {0xFF00, 0x0000, 0x0000, 0x0000, 0x0002};
 
 LoRaPHYUS915::LoRaPHYUS915()
 {
@@ -245,8 +246,9 @@ LoRaPHYUS915::LoRaPHYUS915()
     // current channel masks keep track of the
     // channels previously used, i.e., which channels should be avoided in
     // next transmission
-    copy_channel_mask(current_channel_mask, channel_mask, US915_CHANNEL_MASK_SIZE);
-
+    //copy_channel_mask(current_channel_mask, channel_mask, US915_CHANNEL_MASK_SIZE);
+	copy_channel_mask(current_channel_mask, (uint16_t*)initial_join_channel_mask, US915_CHANNEL_MASK_SIZE);
+	
     // set default channels
     phy_params.channels.channel_list = channels;
     phy_params.channels.channel_list_size = US915_MAX_NB_CHANNELS;
