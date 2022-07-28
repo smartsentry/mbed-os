@@ -38,6 +38,7 @@ SPDX-License-Identifier: BSD-3-Clause
 #include "ThisThread.h"
 #include "Timer.h"
 #include "STM32WL_LoRaRadio.h"
+//#include "mbed_wait_api.h"
 
 #ifndef DEBUG_STDIO
 #define DEBUG_STDIO 0
@@ -91,36 +92,36 @@ typedef struct {
 } fsk_bw_t;
 
 static const fsk_bw_t fsk_bandwidths[] = {
-        { 4800, 0x1F },
-        { 5800, 0x17 },
-        { 7300, 0x0F },
-        { 9700, 0x1E },
-        { 11700, 0x16 },
-        { 14600, 0x0E },
-        { 19500, 0x1D },
-        { 23400, 0x15 },
-        { 29300, 0x0D },
-        { 39000, 0x1C },
-        { 46900, 0x14 },
-        { 58600, 0x0C },
-        { 78200, 0x1B },
-        { 93800, 0x13 },
-        { 117300, 0x0B },
-        { 156200, 0x1A },
-        { 187200, 0x12 },
-        { 234300, 0x0A },
-        { 312000, 0x19 },
-        { 373600, 0x11 },
-        { 467000, 0x09 },
-        { 500000, 0x00 }, // Invalid Bandwidth
+    { 4800, 0x1F },
+    { 5800, 0x17 },
+    { 7300, 0x0F },
+    { 9700, 0x1E },
+    { 11700, 0x16 },
+    { 14600, 0x0E },
+    { 19500, 0x1D },
+    { 23400, 0x15 },
+    { 29300, 0x0D },
+    { 39000, 0x1C },
+    { 46900, 0x14 },
+    { 58600, 0x0C },
+    { 78200, 0x1B },
+    { 93800, 0x13 },
+    { 117300, 0x0B },
+    { 156200, 0x1A },
+    { 187200, 0x12 },
+    { 234300, 0x0A },
+    { 312000, 0x19 },
+    { 373600, 0x11 },
+    { 467000, 0x09 },
+    { 500000, 0x00 }, // Invalid Bandwidth
 };
 
 const uint8_t sync_word[] = {0xC1, 0x94, 0xC1, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 // in ms                                 SF12    SF11    SF10    SF9    SF8    SF7
 const float lora_symbol_time[3][6] = {{ 32.768, 16.384, 8.192, 4.096, 2.048, 1.024 },  // 125 KHz
-                                      { 16.384,  8.192, 4.096, 2.048, 1.024, 0.512 },  // 250 KHz
-                                      { 8.192,  4.096, 2.048, 1.024, 0.512, 0.256 }   // 500 KHz
+    { 16.384,  8.192, 4.096, 2.048, 1.024, 0.512 },  // 250 KHz
+    { 8.192,  4.096, 2.048, 1.024, 0.512, 0.256 }   // 500 KHz
 };
 
 
@@ -535,6 +536,7 @@ void STM32WL_LoRaRadio::set_channel(uint32_t frequency)
 {
     DEBUG_PRINTF("STM32WL_LoRaRadio::set_channel %u\n", frequency);
 #if MBED_CONF_STM32WL_LORA_DRIVER_SLEEP_MODE == 1
+//    wakeup();
     // At this point, we are not sure what is the Modem type, set both
     _mod_params.params.lora.operational_frequency = frequency;
     _mod_params.params.gfsk.operational_frequency = frequency;
@@ -676,7 +678,7 @@ uint32_t STM32WL_LoRaRadio::time_on_air(radio_modems_t modem, uint8_t pkt_len)
                                   + ((_packet_params.params.gfsk.crc_length == RADIO_CRC_2_BYTES) ? 2.0f : 0.0f))
                              / _mod_params.params.gfsk.bit_rate) * 1000);
         }
-            break;
+        break;
         case MODEM_LORA: {
             float ts = lora_symbol_time[_mod_params.params.lora.bandwidth - 4][12
                                                                                - _mod_params.params.lora.spreading_factor];
@@ -696,7 +698,7 @@ uint32_t STM32WL_LoRaRadio::time_on_air(radio_modems_t modem, uint8_t pkt_len)
             // return milliseconds (as ts is in milliseconds)
             air_time = floor(tOnAir + 0.999);
         }
-            break;
+        break;
     }
     DEBUG_PRINTF("STM32WL_LoRaRadio::time_on_air %u %u => %u\n", modem, pkt_len, air_time);
 
@@ -717,7 +719,8 @@ void STM32WL_LoRaRadio::wakeup()
     // now we should wait for the _busy line to go low
     if (_operating_mode == MODE_SLEEP) {
 #if MBED_CONF_STM32WL_LORA_DRIVER_SLEEP_MODE == 1
-        wait_us(3500);
+//        wait_us(3500);
+        rtos::ThisThread::sleep_for(4ms);
         // whenever we wakeup from Cold sleep state, we need to perform
         // image calibration
         _force_image_calibration = true;
@@ -730,18 +733,20 @@ void STM32WL_LoRaRadio::wakeup()
 void STM32WL_LoRaRadio::sleep(void)
 {
     DEBUG_PRINTF("STM32WL_LoRaRadio::sleep\n");
-#if MBED_CONF_STM32WL_LORA_DRIVER_SLEEP_MODE == 1
-    // cold start, power consumption 160 nA
-    sleep_state = 0x00;
-#endif
+    uint8_t sleep_state;
 
     /* switch the antenna OFF by SW */
     set_antenna_switch(RBI_SWITCH_OFF);
     Radio_SMPS_Set(SMPS_DRIVE_SETTING_DEFAULT);
 
-
+#if MBED_CONF_STM32WL_LORA_DRIVER_SLEEP_MODE == 1
+    // cold start, power consumption 160 nA
+    sleep_state = 0x00;
+#else
     // warm start set , power consumption 600 nA
-    uint8_t sleep_state = 0x04;
+    sleep_state = 0x04;
+#endif
+
     write_opmode_command(RADIO_SET_SLEEP, &sleep_state, 1);
 
     _operating_mode = MODE_SLEEP;
@@ -874,7 +879,7 @@ uint8_t STM32WL_LoRaRadio::get_fsk_bw_reg_val(uint32_t bandwidth)
 
     for (i = 0; i < (sizeof(fsk_bandwidths) / sizeof(fsk_bw_t)) - 1; i++) {
         if ((bandwidth >= fsk_bandwidths[i].bandwidth)
-            && (bandwidth < fsk_bandwidths[i + 1].bandwidth)) {
+                && (bandwidth < fsk_bandwidths[i + 1].bandwidth)) {
             return fsk_bandwidths[i].register_value;
         }
     }
@@ -947,7 +952,7 @@ void STM32WL_LoRaRadio::set_tx_config(radio_modems_t modem,
             _mod_params.params.lora.coding_rate = (lora_coding_states_t) coderate;
 
             if (((bandwidth == 0) && ((datarate == 11) || (datarate == 12)))
-                || ((bandwidth == 1) && (datarate == 12))) {
+                    || ((bandwidth == 1) && (datarate == 12))) {
                 _mod_params.params.lora.low_datarate_optimization = 0x01;
             } else {
                 _mod_params.params.lora.low_datarate_optimization = 0x00;
@@ -956,7 +961,7 @@ void STM32WL_LoRaRadio::set_tx_config(radio_modems_t modem,
             _packet_params.modem_type = MODEM_LORA;
 
             if ((_mod_params.params.lora.spreading_factor == LORA_SF5)
-                || (_mod_params.params.lora.spreading_factor == LORA_SF6)) {
+                    || (_mod_params.params.lora.spreading_factor == LORA_SF6)) {
                 if (preamble_len < 12) {
                     _packet_params.params.lora.preamble_length = 12;
                 } else {
@@ -1025,13 +1030,13 @@ void STM32WL_LoRaRadio::set_rx_config(radio_modems_t modem,
             _packet_params.modem_type = MODEM_FSK;
             _packet_params.params.gfsk.preamble_length = (preamble_len << 3); // convert byte into bit
             _packet_params.params.gfsk.preamble_min_detect =
-                    RADIO_PREAMBLE_DETECTOR_08_BITS;
+                RADIO_PREAMBLE_DETECTOR_08_BITS;
             _packet_params.params.gfsk.syncword_length = 3 << 3; // convert byte into bit
             _packet_params.params.gfsk.addr_comp = RADIO_ADDRESSCOMP_FILT_OFF;
             _packet_params.params.gfsk.header_type =
-                    (fix_len == true) ?
-                    RADIO_PACKET_FIXED_LENGTH :
-                    RADIO_PACKET_VARIABLE_LENGTH;
+                (fix_len == true) ?
+                RADIO_PACKET_FIXED_LENGTH :
+                RADIO_PACKET_VARIABLE_LENGTH;
             _packet_params.params.gfsk.payload_length = max_payload_len;
 
             if (crc_on) {
@@ -1057,13 +1062,13 @@ void STM32WL_LoRaRadio::set_rx_config(radio_modems_t modem,
             _rx_timeout_in_symbols = symb_timeout;
             _mod_params.modem_type = MODEM_LORA;
             _mod_params.params.lora.spreading_factor =
-                    (lora_spread_factors_t) datarate;
+                (lora_spread_factors_t) datarate;
             _mod_params.params.lora.bandwidth = (lora_bandwidths_t) lora_bandwidths[bandwidth];
             _mod_params.params.lora.coding_rate =
-                    (lora_coding_states_t) coderate;
+                (lora_coding_states_t) coderate;
 
             if (((bandwidth == 0) && ((datarate == 11) || (datarate == 12)))
-                || ((bandwidth == 1) && (datarate == 12))) {
+                    || ((bandwidth == 1) && (datarate == 12))) {
                 _mod_params.params.lora.low_datarate_optimization = 0x01;
             } else {
                 _mod_params.params.lora.low_datarate_optimization = 0x00;
@@ -1072,7 +1077,7 @@ void STM32WL_LoRaRadio::set_rx_config(radio_modems_t modem,
             _packet_params.modem_type = MODEM_LORA;
 
             if ((_mod_params.params.lora.spreading_factor == LORA_SF5)
-                || (_mod_params.params.lora.spreading_factor == LORA_SF6)) {
+                    || (_mod_params.params.lora.spreading_factor == LORA_SF6)) {
                 if (preamble_len < 12) {
                     _packet_params.params.lora.preamble_length = 12;
                 } else {
@@ -1440,7 +1445,7 @@ void STM32WL_LoRaRadio::get_rx_buffer_status(uint8_t *payload_len,
     // In case of LORA fixed header, the payloadLength is obtained by reading
     // the register REG_LR_PAYLOADLENGTH
     if ((get_modem() == MODEM_LORA) &&
-        (read_register(REG_LR_PACKETPARAMS) >> 7 == 1)) {
+            (read_register(REG_LR_PACKETPARAMS) >> 7 == 1)) {
         *payload_len = read_register(REG_LR_PAYLOADLENGTH);
     } else {
         *payload_len = status[0];
