@@ -230,7 +230,7 @@ void sleep_manager_sleep_auto(void)
 #endif
 
 // debug profile should keep debuggers attached, no deep sleep allowed
-#ifdef MBED_DEBUG
+#ifdef MBED_DEBUGZ
     hal_sleep();
 #else
     if (sleep_manager_can_deep_sleep()) {
