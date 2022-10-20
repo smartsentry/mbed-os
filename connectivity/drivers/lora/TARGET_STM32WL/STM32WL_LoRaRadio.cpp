@@ -249,6 +249,25 @@ bool STM32WL_LoRaRadio::check_rf_frequency(uint32_t frequency)
 void STM32WL_LoRaRadio::set_tx_continuous_wave(uint32_t freq, int8_t power,
                                                uint16_t time)
 {
+    set_channel(freq);
+    set_tx_power(power);
+    set_antenna_switch(RBI_SWITCH_RFO_LP);
+
+    if (time) {
+        write_opmode_command(RADIO_SET_TXCONTINUOUSPREAMBLE, 0, 0);
+    } else {
+        write_opmode_command(RADIO_SET_TXCONTINUOUSWAVE, 0, 0);
+    }
+    uint8_t buf[3];
+
+    buf[0] = 0x00;//CS hack run forever and use for time for other purposes
+    buf[1] = 0x00;
+    buf[2] = 0x00;
+
+    _operating_mode = MODE_TX;
+
+    write_opmode_command(RADIO_SET_TX, buf, 3);
+
     // This is useless. We even removed the support from our MAC layer.
 }
 
