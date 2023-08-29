@@ -42,7 +42,7 @@ CellularDevice::CellularDevice() :
     _info_ref_count(0), _queue(10 * EVENTS_EVENT_SIZE), _state_machine(0),
     _status_cb(), _nw(0)
 #ifdef MBED_CONF_RTOS_PRESENT
-    , _queue_thread(osPriorityNormal, 2048, NULL, "cellular_queue")
+    , _queue_thread(osPriorityNormal, 3072, NULL, "cellular_queue")
 #endif // MBED_CONF_RTOS_PRESENT
 {
     set_sim_pin(NULL);
