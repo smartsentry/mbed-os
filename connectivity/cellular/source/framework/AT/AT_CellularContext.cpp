@@ -367,10 +367,7 @@ bool AT_CellularContext::get_context()
                         ((pdp_type == IPV4V6_PDP_TYPE && (get_device()->get_property(AT_CellularDevice::PROPERTY_IPV4_PDP_TYPE) &&
                                                           get_device()->get_property(AT_CellularDevice::PROPERTY_IPV6_PDP_TYPE))) && !_nonip_req)) {
                     _pdp_type = pdp_type;
-					if(_cid == -1)
-					{
                     set_cid(cid);
-					}
                 }
             }
         }
