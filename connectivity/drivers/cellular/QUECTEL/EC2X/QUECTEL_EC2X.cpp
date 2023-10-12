@@ -57,7 +57,7 @@ static const intptr_t cellular_properties[AT_CellularDevice::PROPERTY_MAX] = {
     AT_CellularNetwork::RegistrationModeLAC,    // C_GREG
     AT_CellularNetwork::RegistrationModeLAC,    // C_REG
     0,  // AT_CGSN_WITH_TYPE
-    1,  // AT_CGDATA
+    0,  // AT_CGDATA//CS this seems to cause issues
     0,  // AT_CGAUTH
     1,  // AT_CNMI
     1,  // AT_CSMP
@@ -142,11 +142,11 @@ nsapi_error_t QUECTEL_EC2X::soft_power_on()
 
 #if defined (MBED_CONF_QUECTEL_EC2X_RTS) && defined(MBED_CONF_QUECTEL_EC2X_CTS)//at this point flow control may not be enabled, RDY may have been corrupted and so could the response to IFC, best to AT&W and hope it took for the next attempt
 		if (_at.at_cmd_discard("+IFC", "=", "%d%d", 2, 2) != NSAPI_ERROR_OK) {
-			printf("Set flow control failed");//should be trace
+			printf("Set flow control failed");//TODO:should be trace
 			return NSAPI_ERROR_DEVICE_ERROR;
 		}
 		if (_at.at_cmd_discard("&W", "", "") != NSAPI_ERROR_OK) {//write changes TODO only do this if we actually needed to(modem write cycles?)
-			printf("Set flow control failed");//should be trace
+			printf("Set flow control failed");//TODO:should be trace
 			return NSAPI_ERROR_DEVICE_ERROR;
 		}
 #endif
