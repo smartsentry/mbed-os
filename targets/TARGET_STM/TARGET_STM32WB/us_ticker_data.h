@@ -24,7 +24,7 @@ extern "C" {
 #include "stm32wbxx_ll_tim.h"
 #include "cmsis_nvic.h"
 
-#if defined TIM16_BASE
+#if defined TIM16_BASEz
 
 #define TIM_MST      TIM16
 #define TIM_MST_IRQ  TIM1_UP_TIM16_IRQn
