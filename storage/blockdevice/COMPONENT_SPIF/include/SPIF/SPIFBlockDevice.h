@@ -215,6 +215,10 @@ public:
      *  @return         A string representation of the BlockDevice class type.
      */
     virtual const char *get_type() const;
+	
+	int powerDown();
+	int exitPowerDown();
+	int deepPowerDown();
 
 private:
     /****************************************/
@@ -291,6 +295,7 @@ private:
     unsigned int _dummy_and_mode_cycles; // Number of Dummy and Mode Bits required by Current Bus Mode
     uint32_t _init_ref_count;
     bool _is_initialized;
+	int powerMode;
 };
 
 #endif  /* MBED_SPIF_BLOCK_DEVICE_H */
