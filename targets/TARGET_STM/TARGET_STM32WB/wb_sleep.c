@@ -43,9 +43,10 @@ void hal_deepsleep(void)
      *  This is tracked in mbed issue 4408.
      *  For now, we're checking all Serial HW FIFO. If any transfer is ongoing
      *  we're not entering deep sleep and returning immediately. */
-    if (serial_is_tx_ongoing()) {
-        return;
-    }
+//    if (serial_is_tx_ongoing()) {
+//        return;
+//    }
+	while(serial_is_tx_ongoing());
 
     // Disable IRQs
     core_util_critical_section_enter();
