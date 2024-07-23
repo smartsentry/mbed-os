@@ -139,6 +139,7 @@ nsapi_error_t QUECTEL_EC2X::soft_power_on()
         _at.set_stop_tag("RDY");
         bool rdy = _at.consume_to_stop_tag();
         _at.set_stop_tag(OK);
+		_at.restore_at_timeout();
 
 #if defined (MBED_CONF_QUECTEL_EC2X_RTS) && defined(MBED_CONF_QUECTEL_EC2X_CTS)//at this point flow control may not be enabled, RDY may have been corrupted and so could the response to IFC, best to AT&W and hope it took for the next attempt
 		if (_at.at_cmd_discard("+IFC", "=", "%d%d", 2, 2) != NSAPI_ERROR_OK) {

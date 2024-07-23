@@ -429,9 +429,9 @@ nsapi_error_t AT_CellularDevice::init()
 
 nsapi_error_t AT_CellularDevice::shutdown()
 {
-    CellularDevice::shutdown();
+    //CellularDevice::shutdown();//Seems to cause a hang
 
-    return _at.at_cmd_discard("+CFUN", "=0");
+    return  CellularDevice::shutdown();//_at.at_cmd_discard("+CFUN", "=0");
 }
 
 nsapi_error_t AT_CellularDevice::is_ready()
