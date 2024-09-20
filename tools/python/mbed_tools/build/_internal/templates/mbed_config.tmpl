@@ -17,6 +17,8 @@ set(MBED_CONFIG_JSON_SOURCE_FILES {% for json_source in json_sources | sort %}
     "{{json_source.as_posix()}}"
 {%- endfor %}
 )
+set(MBED_SVD_NAME "{{svd_name}}" CACHE STRING "")
+set(MBED_DEVICE_NAME "{{device_name}}" CACHE STRING "")
 
 list(APPEND MBED_TARGET_SUPPORTED_C_LIBS {% for supported_c_lib in supported_c_libs %}
     {{supported_c_lib}}
