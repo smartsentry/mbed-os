@@ -141,6 +141,8 @@ elseif(MBED_GENERATE_VS_CODE_DEBUG_CFGS)
 		// Override the command sequences used by VS Code to be correct for this GDB server
 		\"overrideLaunchCommands\": [\"${UPLOAD_LAUNCH_COMMANDS_FOR_JSON}\"],
 		\"overrideRestartCommands\": [\"${UPLOAD_RESTART_COMMANDS_FOR_JSON}\"],
+		\"svdPath\": \"${MBED_SVD_NAME}\",
+		\"deviceName\": \"${MBED_DEVICE_NAME}\",
 	},")
 
 		# Add tasks to both build only, and build and start the GDB server.
