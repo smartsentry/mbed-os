@@ -24,7 +24,13 @@
 #include "PeripheralPins.h"
 #include "mbed_error.h"
 
+// Some STM32G4 series (and others) have 3 FDCAN devices
+// while others have 2
+#ifdef FDCAN3
+static uintptr_t can_irq_contexts[3] = {0};
+#else
 static uintptr_t can_irq_contexts[2] = {0};
+#endif
 static can_irq_handler irq_handler;
 
 /** Call all the init functions
@@ -177,8 +183,11 @@ static void _can_init_freq_direct(can_t *obj, const can_pinmap_t *pinmap, int hz
     obj->CanHandle.Init.DataTimeSeg1 = 0x1;        // Not used - only in FDCAN
     obj->CanHandle.Init.DataTimeSeg2 = 0x1;        // Not used - only in FDCAN
 #ifdef TARGET_STM32H7
-    /* Message RAM offset is only supported in STM32H7 platforms of supported FDCAN platforms */
-    obj->CanHandle.Init.MessageRAMOffset = 0;
+    /* Message RAM offset is only supported in STM32H7 platforms of supported FDCAN platforms 
+    * Total RAM size is 2560 words, each FDCAN object allocates approx 300 words, so offset each by 
+    * 512 to make sure RAM sections don't overlap if using multiple FDCAN instances on one chip
+    */
+    obj->CanHandle.Init.MessageRAMOffset = obj->index * 512;
 
     /* The number of Standard and Extended ID filters are initialized to the maximum possile extent
      * for STM32H7 platforms
@@ -546,7 +555,7 @@ static void can_irq(CANName name, int id)
             irq_handler(can_irq_contexts[id], IRQ_TX);
         }
     }
-#if (defined FDCAN_IT_RX_BUFFER_NEW_MESSAGE)
+#if (defined FDCAN_IT_RX_BUFFER_NEW_MESSAGE) && !defined(TARGET_STM32H7)
     if (__HAL_FDCAN_GET_IT_SOURCE(&CanHandle, FDCAN_IT_RX_BUFFER_NEW_MESSAGE)) {
         if (__HAL_FDCAN_GET_FLAG(&CanHandle, FDCAN_IT_RX_BUFFER_NEW_MESSAGE)) {
             __HAL_FDCAN_CLEAR_FLAG(&CanHandle, FDCAN_IT_RX_BUFFER_NEW_MESSAGE);
@@ -628,7 +637,7 @@ void can_irq_set(can_t *obj, CanIrqType type, uint32_t enable)
             interrupts = FDCAN_IT_TX_COMPLETE;
             break;
         case IRQ_RX:
-#if (defined FDCAN_IT_RX_BUFFER_NEW_MESSAGE)
+#if (defined FDCAN_IT_RX_BUFFER_NEW_MESSAGE) && !defined(TARGET_STM32H7)
             interrupts = FDCAN_IT_RX_BUFFER_NEW_MESSAGE;
 #else
             interrupts = FDCAN_IT_RX_FIFO0_NEW_MESSAGE;
@@ -1210,13 +1219,12 @@ static void can_irq(CANName name, int id)
     tmp1 = __HAL_CAN_MSG_PENDING(&CanHandle, CAN_FIFO0);
     tmp2 = __HAL_CAN_GET_IT_SOURCE(&CanHandle, CAN_IT_FMP0);
 
-    // In legacy can (bxCAN and earlier), reading is the only way to clear rx interrupt. But can_read has mutex locks
-    // since mutexes cannot be used in ISR context, rx interrupt is masked here to temporary disable it
-    // rx interrupts will be unamsked in read operation. reads must be deffered to thread context.
-    // refer to the CAN receive interrupt problem due to mutex and resolution section of README doc.
-    __HAL_CAN_DISABLE_IT(&CanHandle, CAN_IT_FMP0);
-
     if ((tmp1 != 0) && tmp2) {
+        // In legacy can (bxCAN and earlier), reading is the only way to clear rx interrupt. But can_read has mutex locks
+        // since mutexes cannot be used in ISR context, rx interrupt is masked here to temporary disable it
+        // rx interrupts will be unamsked in read operation. reads must be deffered to thread context.
+        // refer to the CAN receive interrupt problem due to mutex and resolution section of README doc.
+        __HAL_CAN_DISABLE_IT(&CanHandle, CAN_IT_FMP0);
         irq_handler(can_irq_contexts[id], IRQ_RX);
     }
 

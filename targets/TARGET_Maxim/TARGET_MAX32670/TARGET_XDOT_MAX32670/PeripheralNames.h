@@ -1,10 +1,5 @@
-/**
- * @file flc.h
- * @brief      Flash Controler driver.
- * @details    This driver can be used to operate on the embedded flash memory.
- */
-/* ****************************************************************************
- * Copyright (C) 2022 Maxim Integrated Products, Inc., All Rights Reserved.
+/*******************************************************************************
+ * Copyright (C) Maxim Integrated Products, Inc., All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -33,53 +28,45 @@
  * trademarks, maskwork rights, or any other form of intellectual
  * property whatsoever. Maxim Integrated Products, Inc. retains all
  * ownership rights.
- *
- *
- *************************************************************************** */
-
-/* **** Includes **** */
-#include <string.h>
-#include "mxc_device.h"
-#include "mxc_assert.h"
-#include "mxc_sys.h"
-#include "flc_revb_regs.h"
-#include "mcr_regs.h" // For ECCEN registers.
-
-/**
- * @ingroup flc
- * @{
+ *******************************************************************************
  */
 
-/* **** Definitions **** */
+#ifndef MBED_PERIPHERALNAMES_H
+#define MBED_PERIPHERALNAMES_H
 
-/* **** Globals **** */
+#include "cmsis.h"
 
-/* **** Functions **** */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-int MXC_FLC_RevB_Busy (void);
+typedef enum {
+    UART_0 = MXC_BASE_UART0,
+    UART_1 = MXC_BASE_UART1,
+    UART_2 = MXC_BASE_UART2,
+    UART_3 = MXC_BASE_UART3,
+#if defined(MBED_CONF_TARGET_STDIO_UART)
+    STDIO_UART  = MBED_CONF_TARGET_STDIO_UART,
+#else
+    STDIO_UART  = UART_0,
+#endif
+} UARTName;
 
-int MXC_FLC_RevB_MassErase (mxc_flc_revb_regs_t *flc);
+typedef enum {
+    I2C_0 = MXC_BASE_I2C0,
+    I2C_1 = MXC_BASE_I2C1,
+    I2C_2 = MXC_BASE_I2C2,
+} I2CName;
 
-int MXC_FLC_RevB_PageErase (mxc_flc_revb_regs_t *flc,uint32_t addr);
-
-int MXC_FLC_RevB_Write32 (mxc_flc_revb_regs_t *flc, uint32_t locgialAddr, uint32_t data, uint32_t physicalAddr);
-
-int MXC_FLC_RevB_Write128 (mxc_flc_revb_regs_t *flc, uint32_t addr, uint32_t *data);
-
-int MXC_FLC_RevB_EnableInt (uint32_t mask);
-
-int MXC_FLC_RevB_DisableInt (uint32_t mask);
-
-int MXC_FLC_RevB_GetFlags (void);
-
-int MXC_FLC_RevB_ClearFlags (uint32_t mask);
-
-int MXC_FLC_RevB_UnlockInfoBlock (mxc_flc_revb_regs_t *flc, uint32_t address);
-
-int MXC_FLC_RevB_LockInfoBlock (mxc_flc_revb_regs_t *flc, uint32_t address);
-/**@} end of group flc */
+typedef enum {
+    SPI_0 = MXC_BASE_SPI0,
+    SPI_1 = MXC_BASE_SPI1,
+    SPI_2 = MXC_BASE_SPI2,
+} SPIName;
 
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
