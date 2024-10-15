@@ -385,7 +385,6 @@ Gap::Gap(
     // Recover static random identity
     _random_static_identity_address = _pal_gap.get_random_address();
 
-				mMGNodeCount = 0;
     _pal_gap.set_event_handler(this);
 #if BLE_FEATURE_PRIVACY
     _private_address_controller.set_event_handler(this);
@@ -1276,7 +1275,6 @@ void Gap::on_scan_started(bool success)
 {
     tr_info("Scan %s", success ? "successfully started" : "failed to start");
 
-		mMGNodeCount = 0;
     MBED_ASSERT(_scan_state == ScanState::pending_scan);
 
     if (success) {
@@ -1474,75 +1472,75 @@ void Gap::on_gap_event_received(const GapEvent &e)
 #if BLE_ROLE_OBSERVER
 void Gap::on_advertising_report(const GapAdvertisingReportEvent &e)
 {
-	
-	if(mMGNodeCount < 48) {
-		
-		mMGNodeCount++;
-		for (size_t i = 0; i < e.size(); ++i) {
-				GapAdvertisingReportEvent::advertising_t advertising = e[i];
+    tr_info("GAP advertising report received");
 
-				tr_debug("Advertising %d - "
-								"type=%s, "
-								"address_type=%s, "
-								"address=%s, "
-								"data=%s, "
-								"rssi=%d",
-								i, /* Advertising number */
-								to_string(advertising.type),
-								to_string(advertising.address_type),
-								to_string(advertising.address),
-								mbed_trace_array(advertising.data.data(), advertising.data.size()),
-								advertising.rssi);
+    for (size_t i = 0; i < e.size(); ++i) {
+        GapAdvertisingReportEvent::advertising_t advertising = e[i];
 
-				// note 1-to-1 conversion between connection_peer_address_type_t and
-				// peer_address_type_t
-				peer_address_type_t peer_address_type =
-						static_cast<peer_address_type_t::type>(advertising.address_type.value());
+        tr_debug("Advertising %d - "
+                "type=%s, "
+                "address_type=%s, "
+                "address=%s, "
+                "data=%s, "
+                "rssi=%d",
+                i, /* Advertising number */
+                to_string(advertising.type),
+                to_string(advertising.address_type),
+                to_string(advertising.address),
+                mbed_trace_array(advertising.data.data(), advertising.data.size()),
+                advertising.rssi);
 
-				// report in new event handler
-				if (!_event_handler) {
-						continue;
-				}
+        // note 1-to-1 conversion between connection_peer_address_type_t and
+        // peer_address_type_t
+        peer_address_type_t peer_address_type =
+            static_cast<peer_address_type_t::type>(advertising.address_type.value());
 
-				uint8_t event_type = 0;
+        // report in new event handler
+        if (!_event_handler) {
+            continue;
+        }
 
-				// Conversion table available at BLUETOOTH SPECIFICATION Version 5.0 | Vol 2, Part E
-				// 7.7.65.13
-				switch (advertising.type.value()) {
-						case received_advertising_type_t::ADV_IND:
-								event_type = 0x13;
-								break;
-						case received_advertising_type_t::ADV_DIRECT_IND:
-								event_type = 0x15;
-								break;
-						case received_advertising_type_t::ADV_SCAN_IND:
-								event_type = 0x12;
-								break;
-						case received_advertising_type_t::ADV_NONCONN_IND:
-								event_type = 0x10;
-								break;
-						case received_advertising_type_t::SCAN_RESPONSE:
-								event_type = 0x1B;
-								break;
-				}
+        uint8_t event_type = 0;
 
-				AdvertisingReportEvent event(
-						advertising_event_t(event_type),
-						peer_address_type,
-						advertising.address,
-						/* primary */ phy_t::LE_1M,
-						/* secondary */ phy_t::NONE,
-						/* SID - NO ADI FIELD IN THE PDU */ 0xFF,
-						/* tx power information not available */ 127,
-						advertising.rssi,
-						/* NO PERIODIC ADVERTISING */ 0,
-						peer_address_type_t::ANONYMOUS,
-						ble::address_t(),
-						Span<const uint8_t>(advertising.data.data(), advertising.data.size())
-				);
-				signal_advertising_report(event);
-		}
-	}
+        // Conversion table available at BLUETOOTH SPECIFICATION Version 5.0 | Vol 2, Part E
+        // 7.7.65.13
+        switch (advertising.type.value()) {
+            case received_advertising_type_t::ADV_IND:
+                event_type = 0x13;
+                break;
+            case received_advertising_type_t::ADV_DIRECT_IND:
+                event_type = 0x15;
+                break;
+            case received_advertising_type_t::ADV_SCAN_IND:
+                event_type = 0x12;
+                break;
+            case received_advertising_type_t::ADV_NONCONN_IND:
+                event_type = 0x10;
+                break;
+            case received_advertising_type_t::SCAN_RESPONSE:
+                event_type = 0x1B;
+                break;
+        }
+
+        AdvertisingReportEvent event(
+            advertising_event_t(event_type),
+            peer_address_type,
+            advertising.address,
+            /* primary */ phy_t::LE_1M,
+            /* secondary */ phy_t::NONE,
+            /* SID - NO ADI FIELD IN THE PDU */ 0xFF,
+            /* tx power information not available */ 127,
+            advertising.rssi,
+            /* NO PERIODIC ADVERTISING */ 0,
+            peer_address_type_t::ANONYMOUS,
+            ble::address_t(),
+            Span<const uint8_t>(advertising.data.data(), advertising.data.size())
+        );
+
+        signal_advertising_report(
+            event
+        );
+    }
 }
 #endif // BLE_ROLE_OBSERVER
 

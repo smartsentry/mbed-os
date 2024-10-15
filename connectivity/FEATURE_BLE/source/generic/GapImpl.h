@@ -110,9 +110,6 @@ public:
 public:
     void setEventHandler(EventHandler *handler);
 
-		//	TODO remove this after testing
-		int mMGNodeCount;
-
     bool isFeatureSupported(controller_supported_features_t feature);
 
     /*                                     advertising                                           */
