@@ -72,13 +72,21 @@ enum spif_default_instructions {
     SPIF_RDSR = 0x05, // Read Status Register
     SPIF_WREN = 0x06, // Write Enable
     SPIF_RSTEN = 0x66, // Reset Enable
+    SPIF_UDPD = 0x79, // Ultra-Deep Power-Down	
     SPIF_RST = 0x99, // Reset
     SPIF_RDID = 0x9F, // Read Manufacturer and JDEC Device ID
     SPIF_ULBPR = 0x98, // Clears all write-protection bits in the Block-Protection register,
+	SPIF_RDPD = 0xAB, //Resume from Deep Power-Down
     SPIF_4BEN = 0xB7, // Enable 4-byte address mode
+    SPIF_DPD = 0xB9, // Deep Power-Down
     SPIF_4BDIS = 0xE9, // Disable 4-byte address mode
 };
-
+enum spif_power_modes {
+    SPIF_AWAKE = 0x00, //
+    SPIF_POWERDOWN = 0x01, //
+    SPIF_DEEPPOWERDOWN = 0x02, //
+	
+};
 // Mutex is used for some SPI Driver commands that must be done sequentially with no other commands in between
 // e.g. (1)Set Write Enable, (2)Program, (3)Wait Memory Ready
 SingletonPtr<rtos::Mutex> SPIFBlockDevice::_mutex;
@@ -129,6 +137,15 @@ int SPIFBlockDevice::init()
 
     _address_size = SPIF_ADDR_SIZE_3_BYTES;         // Set to 3-bytes since SFDP always use only A23 ~ A0
 
+		//Assume powered down
+		if (SPIF_BD_ERROR_OK !=  _spi_send_general_command(SPIF_RDPD, SPI_NO_ADDRESS_COMMAND, NULL, 0, NULL, 0)) {
+		tr_error("Sending RDPD command FAILED");
+		status = SPIF_BD_ERROR_DEVICE_ERROR;
+        goto exit_point;
+        }
+		powerMode = SPIF_AWAKE;
+	
+	
     // Soft Reset
     if (-1 == _reset_flash_mem()) {
         tr_error("init - Unable to initialize flash memory, tests failed");
@@ -231,7 +248,13 @@ int SPIFBlockDevice::read(void *buffer, bd_addr_t addr, bd_size_t size)
     if (!_is_initialized) {
         return BD_ERROR_DEVICE_ERROR;
     }
-
+	
+	if(powerMode !=SPIF_AWAKE)
+	{
+		exitPowerDown();
+	}
+	
+	
     int status = SPIF_BD_ERROR_OK;
     tr_debug("Read - Inst: 0x%xh", _read_instruction);
     _mutex->lock();
@@ -566,7 +589,7 @@ spif_bd_error SPIFBlockDevice::_spi_send_program_command(int prog_inst, const vo
 spif_bd_error SPIFBlockDevice::_spi_send_erase_command(int erase_inst, bd_addr_t addr, bd_size_t size)
 {
     tr_debug("Erase Inst: 0x%xh, addr: %llu, size: %llu", erase_inst, addr, size);
-    addr = (((int)addr) & 0xFFFFF000);
+    //addr = (((int)addr) & 0xFFFFF000);
     _spi_send_general_command(erase_inst, addr, NULL, 0, NULL, 0);
     return SPIF_BD_ERROR_OK;
 }
@@ -797,6 +820,37 @@ int SPIFBlockDevice::_handle_vendor_quirks()
             _spi_send_general_command(SPIF_ULBPR, SPI_NO_ADDRESS_COMMAND, NULL, 0, NULL, 0);
             break;
     }
+
+    return 0;
+}
+
+int SPIFBlockDevice::powerDown()
+{
+	if (SPIF_BD_ERROR_OK !=  _spi_send_general_command(SPIF_DPD, SPI_NO_ADDRESS_COMMAND, NULL, 0, NULL, 0)) {
+		tr_error("Sending DPD command FAILED");
+		return -1;
+	}
+	powerMode = SPIF_POWERDOWN;
+    return 0;
+}
+
+int SPIFBlockDevice::deepPowerDown()
+{
+	if (SPIF_BD_ERROR_OK !=  _spi_send_general_command(SPIF_UDPD, SPI_NO_ADDRESS_COMMAND, NULL, 0, NULL, 0)) {
+		tr_error("Sending UDPD command FAILED");
+		return -1;
+	}
+	powerMode = SPIF_DEEPPOWERDOWN;
+
+    return 0;
+}
+int SPIFBlockDevice::exitPowerDown()
+{
+	if (SPIF_BD_ERROR_OK !=  _spi_send_general_command(SPIF_RDPD, SPI_NO_ADDRESS_COMMAND, NULL, 0, NULL, 0)) {
+		tr_error("Sending RDPD command FAILED");
+		return -1;
+	}
+	powerMode = SPIF_AWAKE;
 
     return 0;
 }
