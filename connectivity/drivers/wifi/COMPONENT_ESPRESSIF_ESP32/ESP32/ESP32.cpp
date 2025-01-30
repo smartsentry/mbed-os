@@ -981,12 +981,14 @@ bool ESP32::recv_ap(nsapi_wifi_ap_t *ap)
             int sec;
             uint8_t work_buf[6+1]; /* It needs 1 byte extra. */
             int8_t  work_rssi[2];  /* It needs 1 byte extra. */
-
-            ret = _parser.recv("(%d,\"%32[^\"]\",%hhd,\"%hhx:%hhx:%hhx:%hhx:%hhx:%hhx\",%hhu)", &sec, ap->ssid,
+            int8_t dummy;
+            //+CWLAP:(<ecn>,<ssid>,<rssi>,<mac>,<channel>,<freq_offset>,<freqcal_val>,<pairwise_cipher>,<group_cipher>,<bgn>,<wps>)
+            ret = _parser.recv("(%d,\"%32[^\"]\",%hhd,\"%hhx:%hhx:%hhx:%hhx:%hhx:%hhx\",%hhu,%hhd,%hhd,%hhd,%hhd,%hhd,%hhd)", &sec, ap->ssid,
                                &work_rssi[0], &work_buf[0], &work_buf[1], &work_buf[2], &work_buf[3], &work_buf[4],
-                               &work_buf[5], &ap->channel);
+                               &work_buf[5], &ap->channel,&dummy,&dummy,&dummy,&dummy,&dummy,&dummy);
             ap->rssi = work_rssi[0];
             memcpy(ap->bssid, work_buf, 6);
+
             ap->security = sec < 5 ? (nsapi_security_t)sec : NSAPI_SECURITY_UNKNOWN;
             break;
         }
