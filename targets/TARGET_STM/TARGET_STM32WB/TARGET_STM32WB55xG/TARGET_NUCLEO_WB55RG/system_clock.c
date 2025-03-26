@@ -123,5 +123,6 @@ void SetSysClock(void)
     /* Select HSI as system clock source after Wake Up from Stop mode */
     LL_RCC_SetClkAfterWakeFromStop(LL_RCC_STOP_WAKEUPCLOCK_HSI);
 
+    LL_HSEM_ReleaseLock(HSEM, CFG_HW_CLK48_CONFIG_SEMID, 0); 
     LL_HSEM_ReleaseLock(HSEM, CFG_HW_RCC_SEMID, 0);
 }
