@@ -8,7 +8,7 @@ macro(create_mbed_wifi_target)
 
 		target_link_libraries(mbed-wifi
 		    PUBLIC
-		        mbed-rtos-flags
+		        mbed-core-flags
 		        mbed-netsocket-api
 		)
 	endif()
@@ -34,5 +34,10 @@ endif()
 if("COMPONENT_ESPRESSIF_ESP8266=1" IN_LIST MBED_TARGET_DEFINITIONS)
 	create_mbed_wifi_target()
     add_subdirectory(COMPONENT_ESPRESSIF_ESP8266)
+endif()
+
+if("COMPONENT_ESPRESSIF_ESP32=1" IN_LIST MBED_TARGET_DEFINITIONS)
+	create_mbed_wifi_target()
+    add_subdirectory(COMPONENT_ESPRESSIF_ESP32)
 endif()
 

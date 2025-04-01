@@ -51,6 +51,7 @@ import dataclasses
 from typing import Optional, TextIO
 from abc import abstractmethod, ABC
 from sys import stdout, exit, argv, path
+import sys
 from os import sep
 from os.path import (basename, dirname, join, relpath, abspath, commonprefix,
                      splitext)
@@ -60,7 +61,15 @@ import json
 from argparse import ArgumentParser
 from copy import deepcopy
 from collections import defaultdict
-from prettytable import PrettyTable, HEADER
+from prettytable import PrettyTable
+
+# prettytable moved this constant into an enum in the Python 3.9 release.
+if sys.version_info >= (3, 9):
+    from prettytable import HRuleStyle
+    HEADER = HRuleStyle.HEADER
+else:
+    from prettytable import HEADER
+
 from jinja2 import FileSystemLoader, StrictUndefined
 from jinja2.environment import Environment
 
@@ -99,7 +108,7 @@ class MemoryBankInfo:
 
 class _Parser(ABC):
     """Internal interface for parsing"""
-    SECTIONS = ('.text', '.data', '.bss', '.heap', '.stack')
+    SECTIONS = ('.text', '.data', '.bss', '.heap', '.heap_0', '.stack')
     MISC_FLASH_SECTIONS = ('.interrupts', '.flash_config')
     OTHER_SECTIONS = ('.interrupts_ram', '.init', '.ARM.extab',
                       '.ARM.exidx', '.ARM.attributes', '.eh_frame',

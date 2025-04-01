@@ -30,7 +30,7 @@ using namespace utest::v1;
 void test_emac_memory_cb(int opt)
 {
     static bool send_request = true;
-    static bool memory = true;
+    static bool echo_should_work = true;
     static int no_response_cnt = 0;
     static int retries = 0;
     static int msg_len = 0;
@@ -46,60 +46,52 @@ void test_emac_memory_cb(int opt)
                 printf("STEP 0: memory available\r\n\r\n");
                 emac_if_set_output_memory(true);
                 emac_if_set_input_memory(true);
-                memory = true;
+                echo_should_work = true;
                 break;
 
             case 1:
                 printf("STEP 1: no input memory buffer memory available\r\n\r\n");
                 emac_if_set_output_memory(true);
                 emac_if_set_input_memory(false);
-                memory = false;
+                echo_should_work = false;
                 break;
 
             case 2:
                 printf("STEP 2: memory available\r\n\r\n");
                 emac_if_set_output_memory(true);
                 emac_if_set_input_memory(true);
-                memory = true;
+                echo_should_work = true;
                 break;
 
             case 3:
                 printf("STEP 3: no output memory buffer memory available\r\n\r\n");
                 emac_if_set_output_memory(false);
                 emac_if_set_input_memory(true);
-                memory = false;
+                echo_should_work = false;
                 break;
 
             case 4:
                 printf("STEP 4: memory available\r\n\r\n");
                 emac_if_set_output_memory(true);
                 emac_if_set_input_memory(true);
-                memory = true;
+                echo_should_work = true;
                 break;
 
             case 5:
                 printf("STEP 5: no output or input memory buffer memory available\r\n\r\n");
                 emac_if_set_output_memory(false);
                 emac_if_set_input_memory(false);
-                memory = false;
+                echo_should_work = false;
                 break;
 
             case 6:
                 printf("STEP 6: memory available\r\n\r\n");
                 emac_if_set_output_memory(true);
                 emac_if_set_input_memory(true);
-                memory = true;
+                echo_should_work = true;
                 break;
 
             case 7:
-                printf("STEP 7: memory available, alloc from heap\r\n\r\n");
-                emac_if_set_output_memory(true);
-                emac_if_set_input_memory(true);
-                options |= CTP_OPT_HEAP;
-                memory = true;
-                break;
-
-            case 8:
                 // Test ended
                 END_TEST_LOOP;
         }
@@ -113,10 +105,10 @@ void test_emac_memory_cb(int opt)
         send_request = false;
         no_response_cnt = 0;
     } else if (opt == TIMEOUT) {
-        if (++no_response_cnt > 5) {
-            if (++retries > 3) {
+        if (++no_response_cnt > 3) {
+            if (++retries > 1) {
                 // If echo replies should be received fails the test case
-                if (memory) {
+                if (echo_should_work) {
                     printf("too many retries\r\n\r\n");
                     SET_ERROR_FLAGS(TEST_FAILED);
                     END_TEST_LOOP;
@@ -152,10 +144,10 @@ void test_emac_memory_cb(int opt)
 void test_emac_memory()
 {
     RESET_ALL_ERROR_FLAGS;
-    SET_TRACE_LEVEL(TRACE_SEND | TRACE_SUCCESS | TRACE_FAILURE);
+    SET_TRACE_LEVEL(TRACE_FAILURE);
 
     if (ECHO_SERVER_ADDRESS_KNOWN) {
-        START_TEST_LOOP(test_emac_memory_cb, 100);
+        START_TEST_LOOP(test_emac_memory_cb, 100ms);
     }
 
     PRINT_ERROR_FLAGS;

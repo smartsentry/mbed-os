@@ -36,7 +36,7 @@ The test environment consist of DUTs, network connection and the test server. Ar
 
 ### Public test server
 
-Address: `echo.mbedcloudtesting.com`.
+Address: `mbed-ce.dev`.
 
 Both IPv4 and IPv6 addresses are available from a public DNS service:
 
@@ -60,9 +60,9 @@ Configure the firewall to allow this traffic to access the test server.
 
 These services are available on many operating systems, and installing them is out of scope of this document. Below is an example of how to install these services into a Debian/Ubuntu based Linux distribution using standard Inet Daemon:
 
-```.sh
+```shell
 $ sudo apt install inetutils-inetd
-$ nano /etc/inetd.conf
+$ sudo nano /etc/inetd.conf
 ```
 
 Enable following services from /etc/inetd.conf:
@@ -79,6 +79,12 @@ daytime     stream  tcp6    nowait  root    internal
 time        stream  tcp6    nowait  root    internal
 ```
 
+Then run:
+
+```shell
+$ sudo systemctl enable --now inetutils-inetd.service
+```
+
 Below is an example of how to install these services in TLS version into a Debian/Ubuntu based Linux distribution using Stunnel4 Daemon:
 
 ```.sh
@@ -86,7 +92,7 @@ $ sudo apt install stunnel4
 $ nano /etc/stunnel/stunnel.conf
 ```
 
-Enable following services from /etc/inetd.conf:
+Enable following services from /etc/stunnel/stunnel.conf:
 
 ```
 ; **************************************************************************
@@ -119,12 +125,18 @@ key = /etc/letsencrypt/live/<test_server_url>/privkey.pem
 
 ```
 
+Then run:
+```shell
+$ sudo systemctl enable stunnel4.service
+$ sudo systemctl start stunnel4.service
+```
+
 Get, update and install certificate files by certbot (Provided by Let's Encrypt <https://letsencrypt.org/>).
 
--   Install lighthttpd server:
+-   Install lighthttpd server and set up an index.html (if there is not already a website being served):
 
    ```.sh
-   $ sudo apt-get install lighttpd
+   $ sudo apt install lighttpd
    $ sudo rm -rf /var/www/html/*
    $ sudo echo "<html><body><h1>Empty</h1>" > /var/www/html/index.html
    $ sudo echo "</body></html>" >> /var/www/html/index.html
@@ -132,27 +144,21 @@ Get, update and install certificate files by certbot (Provided by Let's Encrypt 
    $ sudo systemctl restart lighttpd.service
    ```
 
--   Install and set up certbot:
+-   Install and set up certbot using the guide [here](https://certbot.eff.org/instructions?ws=other&os=pip).  Use the "No, I need to keep my web server running." option.  When it asks for the webroot, use `/var/www/html`.
 
-   ```.sh
-   $ sudo apt-get update
-   $ sudo apt-get install software-properties-common
-   $ sudo add-apt-repository ppa:certbot/certbot
-   $ sudo apt-get update
-   $ sudo apt-get install certbot
-   $ sudo certbot certonly
-   $ sudo certbot certonly --webroot -w /var/www/html -d <test_server_url>
-   ```
+-   Configure lighttpd for SSL:
 
--   Set test server to renew certificate before expiry.
-
-   ```.sh
-   $ sudo echo "SHELL=/bin/sh" > /etc/cron.d/certbot
-   $ sudo echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" > /etc/cron.d/certbot
-   $ sudo echo "0 */12 * * * root test -x /usr/bin/certbot -a \! -d /run/systemd/system && perl -e 'sleep int(rand(43200))' && certbot -q renew" > /etc/cron.d/certbot
-   ```
-
-Where <test_server_url> is the test server URL.
+```shell
+$ sudo nano /etc/lighttpd/lighttpd.conf
+```
+Add the following block at the end:
+```
+$SERVER["socket"] == ":443" {
+    ssl.engine = "enable"
+    ssl.pemfile = "/etc/letsencrypt/live/<test_server_url>/fullchain.pem"
+    ssl.privkey = "/etc/letsencrypt/live/<test_server_url>/privkey.pem"
+}
+```
 
 **Testing the connectivity**
 

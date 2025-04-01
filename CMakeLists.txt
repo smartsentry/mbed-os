@@ -4,7 +4,7 @@
 # This is the boilerplate for Mbed OS
 
 cmake_minimum_required(VERSION 3.19.0 FATAL_ERROR)
-cmake_policy(VERSION 3.16...3.22)
+cmake_policy(VERSION 3.19...3.22)
 
 # Setup build type (target type, tests/unit tests/real build) ----------------------------------------------------------------------------------
 # This block sets up the following variables for all subdirs to use:
@@ -56,7 +56,14 @@ if(MBED_IS_STANDALONE AND NOT MBED_IS_NATIVE_BUILD)
     set(MBED_CONFIG_PATH ${CMAKE_CURRENT_BINARY_DIR} CACHE STRING "")
 
     # Initialize Mbed build system
-    include(${CMAKE_CURRENT_LIST_DIR}/tools/cmake/app.cmake)
+    include(${CMAKE_CURRENT_LIST_DIR}/tools/cmake/mbed_toolchain_setup.cmake)
+endif()
+
+# Create project and find compilers (if not already found)
+project(mbed-os LANGUAGES C CXX ASM)
+
+if(MBED_IS_STANDALONE AND NOT MBED_IS_NATIVE_BUILD)
+    include(mbed_project_setup)
 endif()
 
 if(MBED_IS_NATIVE_BUILD)
@@ -84,9 +91,6 @@ if(DEFINED MBED_OS_CI_UPLOAD_METHOD_CONFIG)
 endif()
 
 # Create core Mbed OS targets and set up build flags  ----------------------------------------------------------------------------------
-
-# Create project and find compilers (if not already found)
-project(mbed-os LANGUAGES C CXX ASM)
 
 # Add all paths to the module files within Mbed OS
 list(APPEND CMAKE_MODULE_PATH
@@ -116,10 +120,27 @@ endif()
 # These targets are made visible here so their source files which
 # are spread in different directories can be referenced and can be linked against
 # by libraries that depend on them.
-add_library(mbed-rtos-flags INTERFACE) # Collects source files that are in mbed-os but not mbed-baremetal
-add_library(mbed-rtos-sources INTERFACE) # Collects flags that are in mbed-os but not mbed-baremetal
-add_library(mbed-core-flags INTERFACE) # Collects flags common to mbed-baremetal and mbed-os
-add_library(mbed-core-sources INTERFACE) # Collects source files common to mbed-baremetal and mbed-os
+add_library(mbed-rtos-flags INTERFACE) # Collects flags that are in mbed-os but not mbed-baremetal
+add_library(mbed-rtos-sources INTERFACE) # Collects source files that are in mbed-os but not mbed-baremetal
+add_library(mbed-core-flags INTERFACE) # Collects flags that are in mbed-os or mbed-baremetal
+                                       # depending on target.application-profile setting
+add_library(mbed-core-sources INTERFACE) # Collects source files that are in mbed-os or mbed-baremetal
+                                         # depending on target.application-profile setting
+
+if("MBED_CONF_TARGET_APPLICATION_PROFILE=full" IN_LIST MBED_CONFIG_DEFINITIONS OR MBED_IS_NATIVE_BUILD)
+    set(APPLICATION_PROFILE_CONFIG_FULL TRUE)
+elseif("MBED_CONF_TARGET_APPLICATION_PROFILE=bare-metal" IN_LIST MBED_CONFIG_DEFINITIONS)
+    set(APPLICATION_PROFILE_CONFIG_BAREMETAL TRUE)
+else()
+    message(FATAL_ERROR "target.application-profile must be set to either 'full' or 'bare-metal'!")
+endif()
+
+# mbed-core-flags/mbed-core-sources link mbed-rtos-flags/mbed-rtos-sources or not depending on
+# target.application-profile setting
+if(APPLICATION_PROFILE_CONFIG_FULL)
+    target_link_libraries(mbed-core-flags INTERFACE mbed-rtos-flags)
+    target_link_libraries(mbed-core-sources INTERFACE mbed-rtos-sources)
+endif()
 
 # Validate selected C library type
 # The C library type selected has to match the library that the target can support
@@ -276,34 +297,18 @@ add_subdirectory(cmsis/device/rtos EXCLUDE_FROM_ALL)
 # Create top-level targets  ----------------------------------------------------------------------------------
 
 if(NOT MBED_IS_NATIVE_BUILD)
-    # Core Mbed OS libraries
-    # mbed-baremetal contains baremetal sources + target sources + target compile flags.
-    # mbed-os will be a superset of mbed-baremetal, also containing the RTOS sources and RTOS flags.
-    # Note that many different source files will compile differently depending on if the RTOS is in use.
-    # So, it's needed to compile the core sources twice, once for RTOS and once for non-RTOS.
-    mbed_create_distro(mbed-baremetal ${MBED_TARGET_CMAKE_NAME} mbed-core-flags mbed-core-sources)
-    mbed_create_distro(mbed-os ${MBED_TARGET_CMAKE_NAME} mbed-core-flags mbed-core-sources mbed-rtos-flags mbed-rtos-sources)
+    # Core Mbed OS library
+    if(APPLICATION_PROFILE_CONFIG_FULL)
+        set(MBED_OS_CORE_LIB_NAME mbed-os)
+    else()
+        set(MBED_OS_CORE_LIB_NAME mbed-baremetal)
+    endif()
+    mbed_create_distro(${MBED_OS_CORE_LIB_NAME} ${MBED_TARGET_CMAKE_NAME} mbed-core-flags mbed-core-sources)
 
-    # Set up the linker script and hook it up to the top-level OS targets
-    mbed_setup_linker_script(mbed-baremetal mbed-os ${CMAKE_CURRENT_BINARY_DIR}/generated-headers/mbed-target-config.h)
+    # Set up the linker script and hook it up to the top-level OS target
+    mbed_setup_linker_script(${MBED_OS_CORE_LIB_NAME} ${CMAKE_CURRENT_BINARY_DIR}/generated-headers/mbed-target-config.h)
 
     # Make sure that things linking mbed-core-flags can also get the target-specific include dirs and flags.
     mbed_extract_flags(${MBED_TARGET_CMAKE_NAME}-flags ${MBED_TARGET_CMAKE_NAME})
     target_link_libraries(mbed-core-flags INTERFACE ${MBED_TARGET_CMAKE_NAME}-flags)
-endif()
-
-# Ninja requires to be forced for response files
-if ("${CMAKE_GENERATOR}" MATCHES "Ninja")
-    # known issue ARMClang and Ninja with response files for windows
-    # https://gitlab.kitware.com/cmake/cmake/-/issues/21093
-    # This gets fixed in newer cmake version
-    # https://gitlab.kitware.com/cmake/cmake/-/merge_requests/6484
-    if((CMAKE_HOST_SYSTEM_NAME MATCHES "Windows") AND ((${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.22.0") OR (NOT CMAKE_CXX_COMPILER_ID MATCHES "ARMClang")))
-        set(CMAKE_NINJA_FORCE_RESPONSE_FILE 1 CACHE INTERNAL "")
-    endif()
-endif()
-
-# If this is the top-level buildscript, run finalize tasks
-if(MBED_IS_STANDALONE AND (NOT MBED_IS_NATIVE_BUILD))
-    mbed_finalize_build()
 endif()

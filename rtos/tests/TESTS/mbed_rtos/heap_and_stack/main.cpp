@@ -22,12 +22,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cinttypes>
 
 #include "mbed.h"
 #include "cmsis.h"
 #include "greentea-client/test_env.h"
 #include "utest/utest.h"
 #include "unity/unity.h"
+#include "mbed_boot.h"
 
 using utest::v1::Case;
 
@@ -39,17 +41,8 @@ static const int test_timeout = 30;
 // Malloc fill pattern
 #define MALLOC_FILL                 0x55
 
-extern unsigned char *mbed_heap_start;
-extern uint32_t mbed_heap_size;
 extern unsigned char *mbed_stack_isr_start;
 extern uint32_t mbed_stack_isr_size;
-
-#if defined(TOOLCHAIN_GCC_ARM) && defined(MBED_SPLIT_HEAP)
-extern uint32_t __mbed_sbrk_start_0;
-extern uint32_t __mbed_krbs_start_0;
-unsigned char *mbed_heap_start_0 = (unsigned char *) &__mbed_sbrk_start_0;;
-uint32_t mbed_heap_size_0 = (uint32_t) &__mbed_krbs_start_0 - (uint32_t) &__mbed_sbrk_start_0;
-#endif
 
 struct linked_list {
     linked_list *next;
@@ -115,12 +108,16 @@ static bool rangeinrange(uint32_t addr, uint32_t size, uint32_t start, uint32_t 
  */
 static bool valid_fill(uint8_t *data, uint32_t size, uint8_t fill)
 {
+    bool valid = true;
     for (uint32_t i = 0; i < size; i++) {
         if (data[i] != fill) {
-            return false;
+            printf("Address 0x%" PRIx32 ": expected value 0x%" PRIx8 ", got 0x%" PRIx8,
+                   reinterpret_cast<uint32_t>(&data[i]), fill, data[i]);
+            valid = false;
+            wait_us(1000);
         }
     }
-    return true;
+    return valid;
 }
 
 static void allocate_and_fill_heap(linked_list *&head)
@@ -166,16 +163,19 @@ static void check_and_free_heap(linked_list *head, uint32_t &max_allocation_size
     uint32_t total_size = 0;
     linked_list *current = head;
 
+    bool success = true;
+
     while (current != NULL) {
         total_size += sizeof(linked_list);
-        bool result = valid_fill(current->data, sizeof(current->data), MALLOC_FILL);
 
-        TEST_ASSERT_TRUE_MESSAGE(result, "Memory fill check failed");
+        success = success && valid_fill(current->data, sizeof(current->data), MALLOC_FILL);
 
         linked_list *next = current->next;
         free(current);
         current = next;
     }
+
+    TEST_ASSERT_TRUE_MESSAGE(success, "Memory fill check failed");
 
     max_allocation_size = total_size;
 }

@@ -7,6 +7,7 @@ import logging
 
 from collections import UserDict
 from typing import Any, Iterable, Hashable, List
+import pathlib
 
 from mbed_tools.build._internal.config.source import Override, ConfigSetting
 
@@ -20,6 +21,11 @@ class Config(UserDict):
     settings are collected.
     Applies overrides, appends macros, and updates config settings.
     """
+
+    # List of JSON files used to create this config.  Dumped to CMake at the end of configuration
+    # so that it can regenerate configuration if the JSONs change.
+    # All paths will be relative to the Mbed program root directory, or absolute if outside said directory.
+    json_sources: List[pathlib.Path] = []
 
     def __setitem__(self, key: Hashable, item: Any) -> None:
         """Set an item based on its key."""
@@ -38,6 +44,11 @@ class Config(UserDict):
         for override in overrides:
             logger.debug("Applying override '%s.%s'='%s'", override.namespace, override.name, repr(override.value))
             if override.name in self.data:
+                _apply_override(self.data, override)
+                continue
+
+            # Support override of memory_bank_config in mbed_app.json
+            if override.namespace == "target" and override.name == "memory_bank_config":
                 _apply_override(self.data, override)
                 continue
 

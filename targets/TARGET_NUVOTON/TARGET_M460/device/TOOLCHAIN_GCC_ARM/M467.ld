@@ -30,23 +30,17 @@
 #  endif
 #endif
 
-#if !defined(NU_HYPERRAM_START)
-#define NU_HYPERRAM_START           0x80000000
-#endif
-
-#if !defined(NU_HYPERRAM_SIZE)
-#define NU_HYPERRAM_SIZE            0x800000
-#endif
-
 M_CRASH_DATA_RAM_SIZE = 0x100;
 StackSize = MBED_CONF_TARGET_BOOT_STACK_SIZE;
 
 MEMORY
 {
-  VECTORS (rx)          : ORIGIN = MBED_APP_START, LENGTH = 0x00000400
-  FLASH (rx)            : ORIGIN = MBED_APP_START + 0x400, LENGTH = MBED_APP_SIZE - 0x00000400
-  RAM_INTERN (rwx)      : ORIGIN = MBED_RAM_APP_START, LENGTH = MBED_RAM_APP_SIZE
-  HYPERRAM (rwx)        : ORIGIN = NU_HYPERRAM_START, LENGTH = NU_HYPERRAM_SIZE
+  VECTORS (rx)          : ORIGIN = MBED_CONFIGURED_ROM_BANK_IROM1_START, LENGTH = 0x00000400
+  FLASH (rx)            : ORIGIN = MBED_CONFIGURED_ROM_BANK_IROM1_START + 0x400, LENGTH = MBED_CONFIGURED_ROM_BANK_IROM1_SIZE - 0x00000400
+  RAM_INTERN (rwx)      : ORIGIN = MBED_CONFIGURED_RAM_BANK_IRAM1_START, LENGTH = MBED_CONFIGURED_RAM_BANK_IRAM1_SIZE
+#if NU_ENABLE_HYPERRAM1
+  HYPERRAM (rwx)        : ORIGIN = MBED_CONFIGURED_RAM_BANK_HYPERRAM1_START, LENGTH = MBED_CONFIGURED_RAM_BANK_HYPERRAM1_SIZE
+#endif
 }
 
 /**
@@ -101,6 +95,7 @@ SECTIONS
         LONG (ADDR(.data))
         LONG (SIZEOF(.data))
 
+#if NU_ENABLE_HYPERRAM1
         /* .text.nu.hyperram located at HyperRAM */
         LONG (LOADADDR(.text.nu.hyperram))
         LONG (ADDR(.text.nu.hyperram))
@@ -110,6 +105,7 @@ SECTIONS
         LONG (LOADADDR(.data.nu.hyperram))
         LONG (ADDR(.data.nu.hyperram))
         LONG (SIZEOF(.data.nu.hyperram))
+#endif
 
         __copy_table_end__ = .;
     } > FLASH
@@ -122,13 +118,16 @@ SECTIONS
         LONG (ADDR(.bss))
         LONG (SIZEOF(.bss))
 
+#if NU_ENABLE_HYPERRAM1
         /* .bss.nu.hyperram located at HyperRAM */
         LONG (ADDR(.bss.nu.hyperram))
         LONG (SIZEOF(.bss.nu.hyperram))
+#endif
 
         __zero_table_end__ = .;
     } > FLASH
 
+#if NU_ENABLE_HYPERRAM1
     /* First match used, so place in front of .text */
     .text.nu.hyperram :
     {
@@ -138,6 +137,7 @@ SECTIONS
     Image$$NU_HYPERRAM$$RO$$Base = ADDR(.text.nu.hyperram);
     Image$$NU_HYPERRAM$$RO$$Limit = ADDR(.text.nu.hyperram) + SIZEOF(.text.nu.hyperram);
     Image$$NU_HYPERRAM$$RO$$Length = SIZEOF(.text.nu.hyperram);
+#endif
 
     .text :
     {
@@ -216,6 +216,7 @@ SECTIONS
         __CRASH_DATA_RAM_END__ = .; /* Define a global symbol at data end */
     } > RAM_INTERN 
 
+#if NU_ENABLE_HYPERRAM1
     /* First match used, so place in front of .data */
     .data.nu.hyperram :
     {
@@ -225,6 +226,7 @@ SECTIONS
     Image$$NU_HYPERRAM$$RW$$Base = ADDR(.data.nu.hyperram);
     Image$$NU_HYPERRAM$$RW$$Limit = ADDR(.data.nu.hyperram) + SIZEOF(.data.nu.hyperram);
     Image$$NU_HYPERRAM$$RW$$Length = SIZEOF(.data.nu.hyperram);
+#endif
 
     .data :
     {
@@ -274,6 +276,7 @@ SECTIONS
         __uninitialized_end = .;
     } > RAM_INTERN
 
+#if NU_ENABLE_HYPERRAM1
     /* First match used, so place in front of .bss */
     /* If a variable defined with __attribute__((section())) keyword the
      * variable is treated like an initialized variable. To not waste memory
@@ -287,6 +290,7 @@ SECTIONS
     Image$$NU_HYPERRAM$$ZI$$Base = ADDR(.bss.nu.hyperram);
     Image$$NU_HYPERRAM$$ZI$$Limit = ADDR(.bss.nu.hyperram) + SIZEOF(.bss.nu.hyperram);
     Image$$NU_HYPERRAM$$ZI$$Length = SIZEOF(.bss.nu.hyperram);
+#endif
 
     .bss (NOLOAD):
     {

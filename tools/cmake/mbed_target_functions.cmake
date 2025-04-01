@@ -13,6 +13,10 @@ function(mbed_generate_bin_hex target)
 
     set(artifact_name $<TARGET_FILE_BASE_NAME:${target}>)
 
+    # Convert to BIN format just on demand because the resultant output
+    # can have large holes in addresses which BIN format cannot handle and
+    # can generate very large file.
+    #
     # The first condition is quoted in case MBED_OUTPUT_EXT is unset
     if ("${MBED_OUTPUT_EXT}" STREQUAL "" OR MBED_OUTPUT_EXT STREQUAL "bin")
         list(APPEND CMAKE_POST_BUILD_COMMAND
@@ -20,12 +24,13 @@ function(mbed_generate_bin_hex target)
             COMMAND ${CMAKE_COMMAND} -E echo "-- built: ${CMAKE_CURRENT_BINARY_DIR}/${artifact_name}.bin"
         )
     endif()
-    if ("${MBED_OUTPUT_EXT}" STREQUAL "" OR MBED_OUTPUT_EXT STREQUAL "hex")
-        list(APPEND CMAKE_POST_BUILD_COMMAND
-            COMMAND ${elf_to_bin} -O ihex $<TARGET_FILE:${target}> ${CMAKE_CURRENT_BINARY_DIR}/${artifact_name}.hex
-            COMMAND ${CMAKE_COMMAND} -E echo "-- built: ${CMAKE_CURRENT_BINARY_DIR}/${artifact_name}.hex"
-        )
-    endif()
+    # Convert to Intel HEX format unconditionally which most flash programming
+    # tools can support. For example, GDB load command supports Intel HEX format
+    # but no BIN format.
+    list(APPEND CMAKE_POST_BUILD_COMMAND
+        COMMAND ${elf_to_bin} -O ihex $<TARGET_FILE:${target}> ${CMAKE_CURRENT_BINARY_DIR}/${artifact_name}.hex
+        COMMAND ${CMAKE_COMMAND} -E echo "-- built: ${CMAKE_CURRENT_BINARY_DIR}/${artifact_name}.hex"
+    )
 
     add_custom_command(
         TARGET
@@ -131,9 +136,20 @@ function(mbed_set_post_build target)
     if (NOT MBED_IS_STANDALONE)
         if("${ARGN}" STREQUAL "")
             get_target_property(POST_BUILD_TARGET_LINK_LIBRARIES ${target} LINK_LIBRARIES)
+            get_target_property(MBED_CORE_FLAGS_TARGET_LINK_LIBRARIES mbed-core-flags INTERFACE_LINK_LIBRARIES)
             if("mbed-os" IN_LIST POST_BUILD_TARGET_LINK_LIBRARIES)
+                if(NOT "mbed-rtos-flags" IN_LIST MBED_CORE_FLAGS_TARGET_LINK_LIBRARIES)
+                    message(FATAL_ERROR
+                        "Target ${target} links to mbed-os, but Mbed is configured for a baremetal build. Please set \"target.application-profile\": \"full\" in JSON to enable the mbed-os target, or link your application to mbed-baremetal instead of mbed-os."
+                    )
+                endif()
                 get_target_property(LINKER_SCRIPT_PATH mbed-os LINKER_SCRIPT_PATH)
             elseif("mbed-baremetal" IN_LIST POST_BUILD_TARGET_LINK_LIBRARIES)
+                if("mbed-rtos-flags" IN_LIST MBED_CORE_FLAGS_TARGET_LINK_LIBRARIES)
+                    message(FATAL_ERROR
+                        "Target ${target} links to mbed-baremetal, but Mbed is configured for a full build. Please set \"target.application-profile\": \"bare-metal\" in JSON to enable the mbed-baremetal target, or link your application to mbed-os instead of mbed-baremetal."
+                    )
+                endif()
                 get_target_property(LINKER_SCRIPT_PATH mbed-baremetal LINKER_SCRIPT_PATH)
             else()
                 message(FATAL_ERROR "Target ${target} used with mbed_set_post_build() but does not link to mbed-os or mbed-baremetal!")
@@ -152,16 +168,17 @@ function(mbed_set_post_build target)
     # diagnostic output file for some toolchains.
 
     # copy mapfile .map to .map.old for ram/rom statistics diff in memap.py
-    if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${target}${CMAKE_EXECUTABLE_SUFFIX}.map)
-        add_custom_command(
-            TARGET
-                ${target}
-            PRE_BUILD
-            COMMAND
-                ${CMAKE_COMMAND} -E rename "${CMAKE_CURRENT_BINARY_DIR}/${target}${CMAKE_EXECUTABLE_SUFFIX}.map" "${CMAKE_CURRENT_BINARY_DIR}/${target}${CMAKE_EXECUTABLE_SUFFIX}.map.old"
-        )
-    endif()
-    
+    add_custom_command(
+        TARGET
+            ${target}
+        PRE_BUILD
+        # So that the rename command does not fail on the first build, touch the map file first to create it if it does not exist.
+        COMMAND
+            ${CMAKE_COMMAND} -E touch "${CMAKE_CURRENT_BINARY_DIR}/${target}${CMAKE_EXECUTABLE_SUFFIX}.map"
+        COMMAND
+            ${CMAKE_COMMAND} -E rename "${CMAKE_CURRENT_BINARY_DIR}/${target}${CMAKE_EXECUTABLE_SUFFIX}.map" "${CMAKE_CURRENT_BINARY_DIR}/${target}${CMAKE_EXECUTABLE_SUFFIX}.map.old"
+    )
+
     mbed_configure_memory_map(${target} "${CMAKE_CURRENT_BINARY_DIR}/${target}${CMAKE_EXECUTABLE_SUFFIX}.map")
     mbed_validate_application_profile(${target})
     mbed_generate_bin_hex(${target})
@@ -174,6 +191,12 @@ function(mbed_set_post_build target)
         mbed_generate_map_file(${target})
     endif()
 
+    # Give chance to adjust MBED_UPLOAD_LAUNCH_COMMANDS or MBED_UPLOAD_RESTART_COMMANDS
+    # for debug launch
+    if(COMMAND mbed_adjust_upload_debug_commands)
+        mbed_adjust_upload_debug_commands(${target})
+    endif()
+
     mbed_generate_upload_target(${target})
     mbed_generate_ide_debug_configuration(${target})
 endfunction()
@@ -183,8 +206,22 @@ endfunction()
 # writing out debug configurations.
 #
 function(mbed_finalize_build)
+    # Issue a warning if this is called multiple times (calling it manually used to be required).
+    get_property(FINALIZE_BUILD_CALLED GLOBAL PROPERTY MBED_FINALIZE_BUILD_CALLED SET)
+    if("${FINALIZE_BUILD_CALLED}")
+        message(WARNING "Mbed: Deprecated: mbed_finalize_build() is now automatically called, so you don't need to call it in CMakeLists.txt")
+    endif()
+
     mbed_finalize_ide_debug_configurations()
+
+    set_property(GLOBAL PROPERTY MBED_FINALIZE_BUILD_CALLED TRUE)
 endfunction(mbed_finalize_build)
+
+# Defer a call to mbed_finalize_build() when execution of the top level CMakeLists.txt ends.
+cmake_language(DEFER
+    DIRECTORY ${CMAKE_SOURCE_DIR}
+    ID mbed_finalize_build
+    CALL mbed_finalize_build)
 
 # Lists that mbed_disable_mcu_target_file stores data in
 set(MBED_DISABLE_MCU_TARGET_FILE_TARGETS "" CACHE INTERNAL "" FORCE)

@@ -1,6 +1,50 @@
 # Copyright (c) 2020 ARM Limited. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+# Change GDB load command to flash post-build processed image in debug launch.
+# With this adjustment, GDB load command changes to "load <app>.hex" from
+# just "load":
+# 1. "Load" will load <app>.elf and is inappropriate for targets like
+#    bootloader or TF-M enabled which need to post-build process images.
+# 2. "load <app>.bin" is not considered because GDB load command
+#    doesn't support binary format.
+#
+# NOTE: Place at the very start so that it can override by the below loaded
+#       upload method if need be.
+function(mbed_adjust_upload_debug_commands target)
+    # MBED_UPLOAD_LAUNCH_COMMANDS_BAK = first version of MBED_UPLOAD_LAUNCH_COMMANDS
+    if(DEFINED MBED_UPLOAD_LAUNCH_COMMANDS_BAK)
+        # Need first version for fresh adjust
+        set(MBED_UPLOAD_LAUNCH_COMMANDS ${MBED_UPLOAD_LAUNCH_COMMANDS_BAK})
+    elseif(DEFINED MBED_UPLOAD_LAUNCH_COMMANDS)
+        # No FORCE for saving first version only
+        set(MBED_UPLOAD_LAUNCH_COMMANDS_BAK ${MBED_UPLOAD_LAUNCH_COMMANDS} CACHE INTERNAL "")
+    else()
+        return()
+    endif()
+
+    # GDB load command in MBED_UPLOAD_LAUNCH_COMMANDS?
+    list(FIND MBED_UPLOAD_LAUNCH_COMMANDS "load" LOAD_INDEX)
+    if(${LOAD_INDEX} LESS "0")
+        return()
+    endif()
+
+    # <app>.hex for debug launch load
+    set(HEX_FILE ${CMAKE_CURRENT_BINARY_DIR}/$<TARGET_FILE_BASE_NAME:${target}>.hex)
+
+    # "load" -> "load <app>.hex"
+    #
+    # GDB load command doesn't support binary format. Ignore OUTPUT_EXT
+    # and fix to Intel Hex format.
+    #
+    # NOTE: The <app>.hex file name needs to be quoted (\\\") to pass along
+    #       to gdb correctly.
+    list(TRANSFORM MBED_UPLOAD_LAUNCH_COMMANDS APPEND " \\\"${HEX_FILE}\\\"" AT ${LOAD_INDEX})
+
+    # Update MBED_UPLOAD_LAUNCH_COMMANDS in cache
+    set(MBED_UPLOAD_LAUNCH_COMMANDS ${MBED_UPLOAD_LAUNCH_COMMANDS} CACHE INTERNAL "" FORCE)
+endfunction()
+
 # ----------------------------------------------
 # Common upload method options
 
@@ -28,11 +72,12 @@ set(MBED_GDB_PORT 23331 CACHE STRING "Port that the GDB server will be started o
 set(MBED_UPLOAD_SERIAL_NUMBER "" CACHE STRING "Serial number of the Mbed board or the programming tool, for upload methods that select by serial number.")
 
 # Handle legacy per-upload-method aliases for the upload serial number
-foreach(LEGACY_VAR_NAME JLINK_USB_SERIAL_NUMBER LINKSERVER_PROBE_SN MBED_TARGET_UID OPENOCD_ADAPTER_SERIAL PYOCD_PROBE_UID STLINK_SERIAL_ARGUMENT STM32CUBE_PROBE_SN)
+foreach(LEGACY_VAR_NAME JLINK_USB_SERIAL_NUMBER LINKSERVER_PROBE_SN MBED_TARGET_UID OPENOCD_ADAPTER_SERIAL PYOCD_PROBE_UID STLINK_PROBE_SN STM32CUBE_PROBE_SN)
     if(DEFINED ${LEGACY_VAR_NAME})
 		if(NOT "${${LEGACY_VAR_NAME}}" STREQUAL "")
 			message(WARNING "${LEGACY_VAR_NAME} is deprecated, set the MBED_UPLOAD_SERIAL_NUMBER variable instead. MBED_UPLOAD_SERIAL_NUMBER will be set to the value of ${LEGACY_VAR_NAME}.")
 			set(MBED_UPLOAD_SERIAL_NUMBER ${${LEGACY_VAR_NAME}} CACHE STRING "" FORCE)
+			unset(${LEGACY_VAR_NAME} CACHE)
 		endif()
 	endif()
 endforeach()
@@ -101,4 +146,10 @@ function(mbed_generate_upload_target target)
 	else()
 		gen_upload_target(${target} ${CMAKE_CURRENT_BINARY_DIR}/$<TARGET_FILE_BASE_NAME:${target}>.hex)
 	endif()
+
+	# Make sure building the upload target causes the target to be built first
+	if(TARGET flash-${target})
+		add_dependencies(flash-${target} ${target})
+	endif()
+
 endfunction()

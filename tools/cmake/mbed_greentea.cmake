@@ -1,8 +1,6 @@
 # Copyright (c) 2020-2021 ARM Limited. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-option(MBED_GREENTEA_TEST_BAREMETAL "Select baremetal greentea tests" OFF)
-
 set(MBED_HTRUN_ARGUMENTS "" CACHE STRING "Argument list to forward to htrun.")
 set(MBED_GREENTEA_SERIAL_PORT "" CACHE STRING "Serial port name to talk to the Mbed device on.  Should look like 'COM3' on Windows or '/dev/ttyACM1' on Linux.")
 
@@ -17,8 +15,8 @@ set(MBED_GREENTEA_SERIAL_PORT "" CACHE STRING "Serial port name to talk to the M
 # TEST_SKIPPED - Reason if suite is skipped
 #
 # calling the macro:
-# if(MBED_GREENTEA_TEST_BAREMETAL)
-#     set(skip_reason "RTOS required")
+# if(some_condition)
+#     set(skip_reason "some condition not satisfied")
 # endif()
 # mbed_greentea_add_test(
 #     TEST_NAME
@@ -92,7 +90,9 @@ function(mbed_greentea_add_test)
             ${MBED_GREENTEA_TEST_SOURCES}
     )
 
-    if(MBED_GREENTEA_TEST_BAREMETAL)
+    # Resolve link library based on target.application-profile setting
+    get_target_property(MBED_CORE_FLAGS_TARGET_LINK_LIBRARIES mbed-core-flags INTERFACE_LINK_LIBRARIES)
+    if(NOT "mbed-rtos-flags" IN_LIST MBED_CORE_FLAGS_TARGET_LINK_LIBRARIES)
         list(APPEND MBED_GREENTEA_TEST_REQUIRED_LIBS mbed-baremetal)
     else()
         list(APPEND MBED_GREENTEA_TEST_REQUIRED_LIBS mbed-os)

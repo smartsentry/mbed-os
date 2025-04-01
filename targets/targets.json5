@@ -100,6 +100,13 @@
             "semihosting-enabled": {
                 "help": "Enable ARM Semihosting protocol.  This uses a magic breakpoint instruction to enable the MCU to print data to and access files on a host machine.  However, it can interfere with debuggers that are not semihost aware.",
                 "value": false
+            },
+            "application-profile": {
+                "help": "Select application profile. Options: 'full', 'bare-metal'. 'full' mode enables the real-time \
+OS and enables all features of Mbed to be used. \
+'bare-metal' mode disables the real-time OS, preventing you from using threads and libraries that depend on them. 'bare-metal' \
+mode is recommended for target MCUs with small amounts of flash and RAM.",
+                "value": "full"
             }
         }
     },
@@ -412,6 +419,9 @@
         "supported_toolchains": [
             "GCC_ARM"
         ],
+        "macros": [
+            "MBED_SPLIT_HEAP"
+        ],
         "device_has": [
             "RTC",
             "USTICKER",
@@ -511,7 +521,7 @@
     // Freescale (now NXP) Kinetis Targets -----------------------------------------------------------------------------
     "KL25Z": {
         "supported_form_factors": [
-            "ARDUINO"
+            "ARDUINO_UNO"
         ],
         "core": "Cortex-M0+",
         "extra_labels": [
@@ -3455,8 +3465,7 @@
             }
         },
         "macros_add": [
-            "CORE_CM7",
-            "MBED_SPLIT_HEAP"
+            "CORE_CM7"
         ]
     },
     "NUCLEO_H745ZI_Q": {
@@ -3522,8 +3531,7 @@
             }
         },
         "macros_add": [
-            "CORE_CM7",
-            "MBED_SPLIT_HEAP"
+            "CORE_CM7"
         ]
     },
     "MCU_STM32H747xI_CM4": {
@@ -5204,7 +5212,8 @@
             "__STARTUP_INITIALIZE_NONCACHEDATA",
             "MBED_MPU_CUSTOM",
             "MBED_TICKLESS",
-            "DATA_SECTION_IS_CACHEABLE=1"
+            "DATA_SECTION_IS_CACHEABLE=1",
+            "MBED_SPLIT_HEAP"
         ],
         "inherits": [
             "Target"
@@ -5227,8 +5236,7 @@
             "SPISLAVE",
             "TRNG",
             "WATCHDOG",
-            "USBDEVICE",
-            "LPTICKER"
+            "USBDEVICE"
         ],
         "overrides": {
             "deep-sleep-latency": 10
@@ -5367,6 +5375,30 @@
             "console-usb": true,
             "console-uart": false
         },
+
+        // 2MB QSPI flash
+        "memory_banks": {
+            "EXT_FLASH": {
+                "access": {
+                    "execute": true,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": false
+                },
+                "default": true,
+                "size": 0x200000,
+                "start": 0x60000000,
+                "startup": true
+            }
+        },
+
+        // The end of flash is used by the Teensy bootloader
+        "memory_bank_config": {
+            "EXT_FLASH": {
+                "size": 0x1F0000, // 1984k
+            }
+        },
         "device_has_remove": [
             "EMAC"
         ],
@@ -5387,6 +5419,31 @@
             "console-uart": false,
             "network-default-interface-type": "ETHERNET"
         },
+
+        // 8MB QSPI flash
+        "memory_banks": {
+            "EXT_FLASH": {
+                "access": {
+                    "execute": true,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": false
+                },
+                "default": true,
+                "size": 0x800000,
+                "start": 0x60000000,
+                "startup": true
+            }
+        },
+
+        // The end of flash is used by the Teensy bootloader
+        "memory_bank_config": {
+            "EXT_FLASH": {
+                "size": 0x7C0000, // 7936k
+            }
+        },
+
         "device_name": "MIMXRT1062DVL6B",
         "image_url": "https://www.pjrc.com/store/teensy41_4.jpg"
     },
@@ -7355,7 +7412,6 @@
         "extra_labels": [
             "NUVOTON",
             "NUC472",
-            "NU_XRAM_SUPPORTED",
             "FLASH_CMSIS_ALGO",
             "NUVOTON_EMAC"
         ],
@@ -7392,7 +7448,11 @@
             },
             "eadc-extsmpt-list": {
                 "help": "For EADC, comma separated {pin, value} list to extend sampling time in EADC clocks on per-pin basis. Value must be in the range [0, 255]."
-            }
+            },
+            "ebi-enable": {
+                "help": "Enable EBI for EBI RAM",
+                "options": [false, true]
+            },
         },
         "inherits": [
             "Target"
@@ -7444,7 +7504,25 @@
             "lxt-present": true,
             "network-default-interface-type": "ETHERNET",
             "deep-sleep-latency": 1,
-            "tickless-from-us-ticker": true
+            "tickless-from-us-ticker": true,
+            "ebi-enable": true
+        },
+        "memory_banks": {
+            "EBIRAM1": {
+                "access": {
+                    "execute": false,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": true
+                },
+                "default": true,
+                "size": 0x100000,
+                "start": 0x60000000,
+                "startup": false
+            }
         },
         "detect_code": [
             "1302"
@@ -7885,6 +7963,23 @@
             "hbi-mfp-reg-msk-list": "0xFFFFFF00, 0xFFFFFFFF, 0xFFFF0000, 0xFFFFFFFF",
             "hbi-mfp-reg-val-list": "0x10101000, 0x10101010, 0x10100000, 0x10101010"
         },
+        "memory_banks": {
+            "HYPERRAM1": {
+                "access": {
+                    "execute": false,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": true
+                },
+                "default": true,
+                "size": 0x800000,
+                "start": 0x80000000,
+                "startup": false
+            }
+        },
         "image_url": "https://os.mbed.com/media/cache/platforms/NuMaker-IoT-M467_V1.1_F.png.250x250_q85.png"
     },
     "MCU_M480": {
@@ -8184,6 +8279,9 @@
         ],
         "bootloader_supported": true,
         "forced_reset_timeout": 5,
+        "supported_application_profiles": [
+            "full", "bare-metal"
+        ],
         "is_mcu_family_target": true
     },
     "NU_M2354": { // AKA NUMAKER-M2354
@@ -8202,6 +8300,34 @@
             "usb-uart": "UART_0",
             "usb-uart-tx": "PA_7",
             "usb-uart-rx": "PA_6"
+        },
+        "memory_banks": {
+            "NS_CODE": {
+                "access": {
+                    "execute": true,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": false
+                },
+                "default": false,
+                "size": 0x8D000,
+                "start": 0x10071000,
+                "startup": false
+            },
+            "NS_DATA": {
+                "access": {
+                    "execute": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": true
+                },
+                "default": false,
+                "size": 0x28000,
+                "start": 0x30018000,
+                "startup": false
+            }
         },
         "OUTPUT_EXT": "bin",
         "components_add": [
@@ -9791,6 +9917,21 @@
             // voltages higher than the I/O voltage are illegal for the analog pins
             // (so the ADC can never read 100%).
             "default-adc-vref": 3.3
+        },
+        "memory_banks": {
+            "QSPI_FLASH": {
+                "access": {
+                    "execute": true,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": false
+                },
+                "default": true,
+                "startup": true,
+                "size": 0x200000, // 2MiB
+                "start": 0x10000000
+            }
         },
         "image_url": "https://cdn11.bigcommerce.com/s-2fbyfnm8ev/images/stencil/1280x1280/products/1212/4275/Pico3__75642.1611086462.jpg?c=2"
     },
