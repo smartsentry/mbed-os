@@ -18,6 +18,7 @@
 #if DEVICE_SLEEP
 
 #include "mbed_critical.h"
+#include "stm32wbxx_ll_gpio.h"
 
 extern void save_timer_ctx(void);
 extern void restore_timer_ctx(void);
@@ -57,8 +58,10 @@ void hal_deepsleep(void)
      * us_ticker timestamp until the us_ticker context is restored. */
     mbed_sdk_inited = 0;
 
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
     PWR_EnterStopMode();
     PWR_ExitStopMode();
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
 
     /* Force complete clock reconfiguration */
     SetSysClock();

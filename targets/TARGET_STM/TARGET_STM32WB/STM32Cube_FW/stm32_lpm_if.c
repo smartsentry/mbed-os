@@ -90,6 +90,8 @@ void PWR_ExitOffMode( void )
   */
 void PWR_EnterStopMode( void )
 {
+  HAL_SuspendTick();
+
   /**
    * This function is called from CRITICAL SECTION
    */
@@ -174,6 +176,7 @@ void PWR_ExitStopMode( void )
 
   /* Release RCC semaphore */
   LL_HSEM_ReleaseLock( HSEM, CFG_HW_RCC_SEMID, 0 );
+  HAL_ResumeTick();
 }
 
 /**

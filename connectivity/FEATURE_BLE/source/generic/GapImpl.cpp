@@ -1416,7 +1416,7 @@ void Gap::process_legacy_scan_timeout()
 #if BLE_ROLE_BROADCASTER
 void Gap::on_advertising_timeout()
 {
-    tr_info("Advertising timed out");
+    // tr_info("Advertising timed out");
 
     _event_queue.post(mbed::callback(this, &Gap::process_advertising_timeout));
 }

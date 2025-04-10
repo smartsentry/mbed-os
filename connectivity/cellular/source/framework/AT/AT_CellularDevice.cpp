@@ -427,11 +427,15 @@ nsapi_error_t AT_CellularDevice::init()
     return _at.unlock_return_error();
 }
 
+// nsapi_error_t AT_CellularDevice::shutdown()
+// {
+//     CellularDevice::shutdown();
+
+//     return _at.at_cmd_discard("+CFUN", "=0");
+// }
 nsapi_error_t AT_CellularDevice::shutdown()
 {
-    CellularDevice::shutdown();
-
-    return _at.at_cmd_discard("+CFUN", "=0");
+    return  CellularDevice::shutdown();
 }
 
 nsapi_error_t AT_CellularDevice::is_ready()
