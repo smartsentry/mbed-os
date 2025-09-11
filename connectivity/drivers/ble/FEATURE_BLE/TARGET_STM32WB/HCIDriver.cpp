@@ -919,9 +919,9 @@ static void init_debug(void)
     // __HAL_RCC_GPIOB_CLK_ENABLE();
     // HAL_GPIO_Init(GPIOB, &gpio_config);
 
-    HAL_DBGMCU_DisableDBGSleepMode();
-    HAL_DBGMCU_DisableDBGStopMode();
-    HAL_DBGMCU_DisableDBGStandbyMode();
+    // HAL_DBGMCU_DisableDBGSleepMode();
+    // HAL_DBGMCU_DisableDBGStopMode();
+    // HAL_DBGMCU_DisableDBGStandbyMode();
 
 #endif /* (CFG_DEBUGGER_SUPPORTED == 1) */
 
