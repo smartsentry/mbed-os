@@ -4,7 +4,11 @@
 # CMake script to find the Python interpreter and either install or find
 # Mbed's dependencies.
 
+include(CheckPythonPackage)
+
 option(MBED_CREATE_PYTHON_VENV "If true, Mbed OS will create its own virtual environment (venv) and install its Python packages there.  This removes the need to manually install Python packages." TRUE)
+
+get_filename_component(MBED_CE_TOOLS_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
 
 if(MBED_CREATE_PYTHON_VENV)
     # Use the venv.
@@ -13,25 +17,62 @@ if(MBED_CREATE_PYTHON_VENV)
     # (not target specific)
     set(MBED_VENV_LOCATION ${MBED_SOURCE_DIR}/venv)
     set(VENV_STAMP_FILE ${MBED_VENV_LOCATION}/mbed-venv.stamp)
-    set(MBED_REQUIREMENTS_TXT_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../requirements.txt")
+    set(MBED_PYPROJECT_TOML_LOCATION "${MBED_CE_TOOLS_BASE_DIR}/pyproject.toml")
 
-    # Make it so modifying requirements.txt will trigger a reconfigure
-    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MBED_REQUIREMENTS_TXT_LOCATION})
+    # a separate stamp file to track whether greentea dependencies have been installed
+    set(GT_STAMP_FILE ${MBED_VENV_LOCATION}/mbed-gt.stamp)
 
-    # Find Python3, using the venv if it already exists
-    set (ENV{VIRTUAL_ENV} ${MBED_VENV_LOCATION})
-    set (Python3_FIND_VIRTUALENV FIRST)
-    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    # Make it so modifying pyproject.toml will trigger a reconfigure
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MBED_PYPROJECT_TOML_LOCATION})
+
+    # Find Python3 (this will get the one in the venv if we already found it)
+    set(ENV{VIRTUAL_ENV} ${MBED_VENV_LOCATION})
+    set(Python3_FIND_VIRTUALENV FIRST)
+    find_package(Python3 COMPONENTS Interpreter)
     include(CheckPythonPackage)
 
     set(NEED_TO_CREATE_VENV FALSE)
     set(NEED_TO_INSTALL_PACKAGES FALSE)
-    if(NOT EXISTS "${VENV_STAMP_FILE}")
+
+    # Special situation: if we have a cached interpreter location in the venv dir, but Python could be found,
+    # this means that the venv was deleted or symlinks to a missing python install location.
+    # So, use the system python and recreate it.
+    if("${Python3_EXECUTABLE}" MATCHES "${MBED_VENV_LOCATION}" AND NOT Python3_FOUND)
+        message(STATUS "Python venv deleted or unusable. Recreating using system Python...")
+
+        # Launch a new search for Python3
+        unset(Python3_EXECUTABLE CACHE)
+        unset(Python_EXECUTABLE CACHE)
+        unset(_Python3_EXECUTABLE CACHE)
+        unset(_Python3_INTERPRETER_PROPERTIES CACHE)
+        unset(_Python3_INTERPRETER_SIGNATURE CACHE)
+        set (Python3_FIND_VIRTUALENV STANDARD)
+        unset(ENV{VIRTUAL_ENV})
+        find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+        # Reset venv configuration as above
+        set(Python3_FIND_VIRTUALENV FIRST)
+        set(ENV{VIRTUAL_ENV} ${MBED_VENV_LOCATION})
+
         set(NEED_TO_CREATE_VENV TRUE)
         set(NEED_TO_INSTALL_PACKAGES TRUE)
-    elseif("${MBED_REQUIREMENTS_TXT_LOCATION}" IS_NEWER_THAN "${VENV_STAMP_FILE}")
+    elseif(NOT EXISTS "${VENV_STAMP_FILE}")
+        set(NEED_TO_CREATE_VENV TRUE)
+        set(NEED_TO_INSTALL_PACKAGES TRUE)
+    elseif(NOT ("${Python3_EXECUTABLE}" MATCHES "${MBED_VENV_LOCATION}"))
+        # Alternately if we think we have the venv but FindPython didn't use it, that likely means it's
+        # missing or corrupted and we need to recreate it
+        message(STATUS "Python venv deleted or unusable. Recreating using system Python...")
+        set(NEED_TO_CREATE_VENV TRUE)
+        set(NEED_TO_INSTALL_PACKAGES TRUE)
+    elseif("${MBED_PYPROJECT_TOML_LOCATION}" IS_NEWER_THAN "${VENV_STAMP_FILE}")
         set(NEED_TO_INSTALL_PACKAGES TRUE)
     endif()
+
+    # If greentea tests are being built, we need to ensure greentea dependencies are installed
+    if(MBED_BUILD_GREENTEA_TESTS AND NOT EXISTS "${GT_STAMP_FILE}")
+        set(NEED_TO_INSTALL_PACKAGES TRUE)
+    endif()   
 
     if(NEED_TO_CREATE_VENV)
         # Create venv.
@@ -47,7 +88,8 @@ if(MBED_CREATE_PYTHON_VENV)
         unset(_Python3_EXECUTABLE CACHE)
         unset(_Python3_INTERPRETER_PROPERTIES CACHE)
         unset(_Python3_INTERPRETER_SIGNATURE CACHE)
-        ## Launch a new search for Python3
+
+        ## Launch a new search for Python3 in the venv
         find_package (Python3 REQUIRED COMPONENTS Interpreter)
     endif()
 
@@ -58,42 +100,103 @@ if(MBED_CREATE_PYTHON_VENV)
             COMMAND ${Python3_EXECUTABLE} -m pip install --upgrade pip
             COMMAND_ERROR_IS_FATAL ANY
         )
-        execute_process(
-            COMMAND ${Python3_EXECUTABLE} -m pip install -r ${MBED_REQUIREMENTS_TXT_LOCATION}
-            COMMAND_ERROR_IS_FATAL ANY
-        )
+
+        #
+        if(MBED_BUILD_GREENTEA_TESTS)
+            # Enable the extra dependencies for the GT
+            execute_process(
+                COMMAND ${Python3_EXECUTABLE} -m pip install -e "${MBED_CE_TOOLS_BASE_DIR}[greentea]"
+                COMMAND_ERROR_IS_FATAL ANY
+            )
+        else()
+             # The dependencies for regular build
+            execute_process(
+                COMMAND ${Python3_EXECUTABLE} -m pip install -e "${MBED_CE_TOOLS_BASE_DIR}"
+                COMMAND_ERROR_IS_FATAL ANY
+            )
+        endif()
 
         message(STATUS "Mbed: venv created successfully")
         file(TOUCH ${VENV_STAMP_FILE})
+        if(MBED_BUILD_GREENTEA_TESTS)
+            # If greentea tests are being built, we need create a greentea stamp file
+            file(TOUCH ${GT_STAMP_FILE})
+        endif()
+        
     endif()
 
-    # We always have the memap deps with the venv
-    set(HAVE_MEMAP_DEPS TRUE)
+    # When using the venv, scripts will always be installed to the directory where Python itself is installed
+    # (venv\Scripts on Windows, venv/bin on Linux/Mac)
+    get_filename_component(PYTHON3_INTERP_DIR ${Python3_EXECUTABLE} DIRECTORY)
+    set(PYTHON_SCRIPT_LOC_HINTS ${PYTHON3_INTERP_DIR})
 
 else()
 
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
-    include(CheckPythonPackage)
 
+    # The cmsis_mcu_descr module was written from scratch by Mbed CE.
+    # So, this check will ensure that the user has installed the Mbed CE version of mbed_tools
+    # and not the PyPI version (which we cannot update because it's owned by ARM)
+    check_python_package(mbed_tools.cli.cmsis_mcu_descr HAVE_MBED_CE_TOOLS)
 
-    # Check python packages
-    set(PYTHON_PACKAGES_TO_CHECK intelhex prettytable future jinja2)
-    foreach(PACKAGE_NAME ${PYTHON_PACKAGES_TO_CHECK})
-        string(TOUPPER ${PACKAGE_NAME} PACKAGE_NAME_UCASE) # Ucase name needed for CMake variable
-        string(TOLOWER ${PACKAGE_NAME} PACKAGE_NAME_LCASE) # Lcase name needed for import statement
-
-        check_python_package(${PACKAGE_NAME_LCASE} HAVE_PYTHON_${PACKAGE_NAME_UCASE})
-        if(NOT HAVE_PYTHON_${PACKAGE_NAME_UCASE})
-            message(WARNING "Missing Python dependency ${PACKAGE_NAME}")
-        endif()
-    endforeach()
-
-    # Check deps for memap
-    if(Python3_FOUND AND HAVE_PYTHON_INTELHEX AND HAVE_PYTHON_PRETTYTABLE)
-        set(HAVE_MEMAP_DEPS TRUE)
-    else()
-        set(HAVE_MEMAP_DEPS FALSE)
-        message(STATUS "Missing Python dependencies (at least one of: python3, intelhex, prettytable) so the memory map cannot be printed")
+    if(NOT HAVE_MBED_CE_TOOLS)
+        message(FATAL_ERROR "Did not detect the Mbed CE Python tools installed into the python interpreter ${Python3_EXECUTABLE}. Install them with a command like: ${Python3_EXECUTABLE} -m pip install -e ${MBED_CE_TOOLS_BASE_DIR}")
     endif()
 
+    # For now, don't supply any hints and assume that the script install dir is correctly on PATH
+    set(PYTHON_SCRIPT_LOC_HINTS)
 endif()
+
+# Find scripts provided by the Python package
+find_program(mbed_tools
+    NAMES mbed-tools
+    HINTS ${PYTHON_SCRIPT_LOC_HINTS}
+    DOC "Path to mbed-tools Python script. This script is part of the mbed-ce-tools python package."
+    REQUIRED)
+
+find_program(mbedhtrun
+    NAMES mbedhtrun
+    HINTS ${PYTHON_SCRIPT_LOC_HINTS}
+    DOC "Path to mbedhtrun Python script. This script is part of the mbed-ce-tools python package."
+    REQUIRED)
+
+find_program(memap
+    NAMES memap
+    HINTS ${PYTHON_SCRIPT_LOC_HINTS}
+    DOC "Path to memap Python script. This script is part of the mbed-ce-tools python package."
+    REQUIRED)
+
+find_program(ambiq_svl
+    NAMES ambiq_svl
+    HINTS ${PYTHON_SCRIPT_LOC_HINTS}
+    DOC "Path to ambiq_svl Python script. This script is part of the mbed-ce-tools python package."
+    REQUIRED)
+
+#
+# Utility function to check for a Python package with the given import name.
+# If the package is not found and the Mbed venv is in use,
+# then the package will be installed by passing PACKAGE_INSTALL_CONSTRAINT to Pip.
+# If the install fails or the venv is not being used, FOUND_VAR will be set to false.
+#
+function(mbed_check_or_install_python_package FOUND_VAR PACKAGE_IMPORT_NAME PACKAGE_INSTALL_CONSTRAINT)
+    check_python_package(${PACKAGE_IMPORT_NAME} ${FOUND_VAR})
+
+    if(NOT ${FOUND_VAR})
+        # If we are using the Mbed venv, we can install the package automatically.
+        if(MBED_CREATE_PYTHON_VENV)
+            message(STATUS "Mbed: Installing ${PACKAGE_INSTALL_CONSTRAINT} into Mbed's Python virtualenv")
+            execute_process(
+                    COMMAND ${Python3_EXECUTABLE} -m pip install ${PACKAGE_INSTALL_CONSTRAINT}
+                    RESULT_VARIABLE PIP_INSTALL_RESULT
+            )
+            if(NOT PIP_INSTALL_RESULT EQUAL 0)
+                message(WARNING "Installation of ${PACKAGE_INSTALL_CONSTRAINT} via pip failed.")
+            else()
+                # Redo the check to confirm it's installed
+                check_python_package(${PACKAGE_IMPORT_NAME} ${FOUND_VAR})
+            endif()
+        else()
+            message(WARNING "Mbed: ${PACKAGE_IMPORT_NAME} cannot be installed because the Mbed virtualenv is not being used. Please install ${PACKAGE_INSTALL_CONSTRAINT} into Mbed's Python interpeter manually.")
+        endif()
+    endif()
+endfunction(mbed_check_or_install_python_package)

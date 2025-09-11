@@ -9,10 +9,12 @@
 
 set(UPLOAD_SUPPORTS_DEBUG TRUE)
 
-### Check if upload method can be enabled on this machine
-include(CheckPythonPackage)
-check_python_package(pyocd HAVE_PYOCD)
-set(UPLOAD_PYOCD_FOUND ${HAVE_PYOCD})
+### Find PyOCD package
+
+# Use >=0.37 so that we get Ambiq Apollo3 support
+mbed_check_or_install_python_package(HAVE_PYTHON_PYOCD pyocd pyocd>=0.37)
+
+set(UPLOAD_PYOCD_FOUND ${HAVE_PYTHON_PYOCD})
 
 ### Function to generate upload target
 set(PYOCD_PROBE_ARGS "" CACHE INTERNAL "" FORCE)
@@ -34,7 +36,9 @@ function(gen_upload_target TARGET_NAME BINARY_FILE)
 		${PYOCD_PROBE_ARGS}
 		--base-address ${MBED_UPLOAD_BASE_ADDR}
 		${PYOCD_EXTRA_OPTIONS}
-		${BINARY_FILE})
+		${BINARY_FILE}
+		VERBATIM
+		USES_TERMINAL)
 
 endfunction(gen_upload_target)
 
@@ -55,6 +59,11 @@ set(UPLOAD_LAUNCH_COMMANDS
 "monitor reset halt"
 "load"
 "tbreak main"
+
+# Tell GDB to allow reads to any region of memory, ignoring the memory map sent by the GDB server.
+# This is needed because often the GDB server's memory map doesn't include peripheral memory, so
+# the user can't inspect peripheral registers.
+"set mem inaccessible-by-default off"
 
 # It appears the device under debug must be halted after UPLOAD_LAUNCH_COMMANDS,
 # or debugger will become abnormal.

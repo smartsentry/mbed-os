@@ -34,6 +34,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
 #include "PeripheralPins.h"
@@ -67,6 +68,8 @@ const PinMap PinMap_I2C_testing[] = {
     {P0_23,  0, 0},
     {P0_24,  0, 0},
     {P0_25,  0, 0},
+    {P0_26,  0, 0},
+    {P0_27,  0, 0},
     {P0_28,  0, 0},
     {P0_29,  0, 0},
     {P0_30,  0, 0},
@@ -120,6 +123,8 @@ const PinMap PinMap_SPI_testing[] = {
     {P0_23,  0, 0},
     {P0_24,  0, 0},
     {P0_25,  0, 0},
+    {P0_26,  0, 0},
+    {P0_27,  0, 0},
     {P0_28,  0, 0},
     {P0_29,  0, 0},
     {P0_30,  0, 0},
@@ -173,6 +178,8 @@ const PinMap PinMap_UART_testing[] = {
     {P0_23,  0, 0},
     {P0_24,  0, 0},
     {P0_25,  0, 0},
+    {P0_26,  0, 0},
+    {P0_27,  0, 0},
     {P0_28,  0, 0},
     {P0_29,  0, 0},
     {P0_30,  0, 0},
@@ -226,6 +233,8 @@ const PinMap PinMap_PWM_testing[] = {
     {P0_23,  0, 0},
     {P0_24,  0, 0},
     {P0_25,  0, 0},
+    {P0_26,  0, 0},
+    {P0_27,  0, 0},
     {P0_28,  0, 0},
     {P0_29,  0, 0},
     {P0_30,  0, 0},
@@ -279,6 +288,8 @@ const PinMap PinMap_QSPI_testing[] = {
     {P0_23,  0, 0},
     {P0_24,  0, 0},
     {P0_25,  0, 0},
+    {P0_26,  0, 0},
+    {P0_27,  0, 0},
     {P0_28,  0, 0},
     {P0_29,  0, 0},
     {P0_30,  0, 0},

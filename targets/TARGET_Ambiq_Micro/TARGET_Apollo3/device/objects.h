@@ -21,19 +21,21 @@
 #include "am_bsp.h"
 #include "am_util.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "objects_flash.h"
 #include "objects_gpio.h"
 #include "objects_uart.h"
 #include "objects_iom.h"
 #include "objects_spi.h"
 #include "objects_i2c.h"
+#include "objects_adc.h"
+#include "objects_pwm.h"
 
-#ifdef __cplusplus
-}
-#endif
+#include "mbed_error.h"
+
+// Macro to check the result of calling am am_hal function and trigger an error if it fails
+#define MBED_CHECK_AM_HAL_CALL(call) \
+    if((call) != AM_HAL_STATUS_SUCCESS) { \
+        MBED_ERROR(MBED_MAKE_ERROR(MBED_MODULE_HAL, MBED_ERROR_CODE_INVALID_OPERATION), "AM HAL Call Failed!"); \
+    }
 
 #endif

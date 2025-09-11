@@ -116,11 +116,11 @@
         },
         "tcpip-thread-priority": {
             "help": "Priority of lwip TCPIP thread",
-            "value": "osPriorityNormal"
+            "value": "osPriorityHigh"
         },
         "mem-size": {
-            "help": "Size of heap (bytes) - used for outgoing packets, and also used by some drivers for reception, see LWIP's opt.h for more information. Current default is 1600.",
-            "value": 1600
+            "help": "Size of heap (bytes) - used for outgoing packets, and also used by some drivers for reception, see LWIP's opt.h for more information.",
+            "value": 4000
         },
         "tcpip-thread-stacksize": {
             "help": "Stack size for lwip TCPIP thread",
@@ -160,16 +160,10 @@
         }
     },
     "target_overrides": {
-        "STM": {
-            "mem-size": 2310
-        },
         "Freescale": {
             "mem-size": 33270
         },
-        "LPC1768": {
-            "mem-size": 16362
-        },
-        "ARCH_PRO": {
+        "MCU_LPC17XX": {
             "mem-size": 16362
         },
         "LPC546XX": {
@@ -199,7 +193,7 @@
         "MIMXRT105X": {
             "mem-size": 36560
         },
-        "PORTENTA_H7": {
+        "STM32H747_ARDUINO": {
             "mem-size": 16000
         },
         "FVP_MPS2_M3": {

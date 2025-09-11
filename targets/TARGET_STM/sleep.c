@@ -98,8 +98,10 @@ __WEAK void ForceOscOutofDeepSleep(void)
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
     RCC_OscInitStruct.MSIState = RCC_MSI_ON;
     RCC_OscInitStruct.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
-#if defined RCC_MSIRANGE_11
-    RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_11; // Highest freq, 48MHz range
+#if defined (TARGET_STM32U5)
+    RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_0; // Highest freq for U5, 48MHz range
+#elif defined (RCC_MSIRANGE_11)
+    RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_11; // Highest freq for L4/L5, 48MHz range
 #else
     RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6; // 4MHz range
 #endif
@@ -107,7 +109,7 @@ __WEAK void ForceOscOutofDeepSleep(void)
 #else /* defined RCC_SYSCLKSOURCE_MSI */
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
     RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-    RCC_OscInitStruct.HSICalibrationValue = 16;
+    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
 #endif /* defined RCC_SYSCLKSOURCE_MSI */
 
@@ -265,7 +267,7 @@ __WEAK void hal_deepsleep(void)
     /* We've seen unstable PLL CLK configuration when DEEP SLEEP exits just few µs after being entered
     *  So we need to force clock init out of Deep Sleep.
     *  This init has been split into 2 separate functions so that the involved structures are not allocated on the stack in parallel.
-    *  This will reduce the maximum stack usage in case on non-optimized / debug compilers settings
+    *  This will reduce the maximum stack usage in case on non-optimized / debug compilers settings.
     */
     ForceOscOutofDeepSleep();
     ForcePeriphOutofDeepSleep();

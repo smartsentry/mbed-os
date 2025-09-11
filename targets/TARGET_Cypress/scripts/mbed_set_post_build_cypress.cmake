@@ -62,9 +62,14 @@ macro(mbed_post_build_psoc6_sign_image
     cortex_m0_hex
 )
     if("${cypress_psoc6_target}" STREQUAL "${MBED_TARGET}")
-        function(mbed_post_build_function target)
-            find_package(Python3)
 
+        # Make sure we have the python packages we need
+        mbed_check_or_install_python_package(HAVE_PYTHON_CYSECURETOOLS cysecuretools "cysecuretools~=6.0")
+        if(NOT HAVE_PYTHON_CYSECURETOOLS)
+            message(FATAL_ERROR "Python package required for signing not found.")
+        endif()
+
+        function(mbed_post_build_function target)
             set(post_build_command
                 ${Python3_EXECUTABLE} ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/PSOC6.py
                 sign

@@ -195,8 +195,8 @@
                     "write": true
                 },
                 "default": true,
-                "size": 393216,
-                "start": 268435456,
+                "size": 0x60000,
+                "start": 0x10000000,
                 "startup": false
             },
             "IROM1": {
@@ -210,8 +210,8 @@
                     "write": false
                 },
                 "default": false,
-                "size": 999424,
-                "start": 49152,
+                "size": 0x100000,
+                "start": 0,
                 "startup": true
             }
         },
@@ -1591,6 +1591,93 @@
         "sub_family": "LPC176x",
         "vendor": "NXP:11"
     },
+    "LPC1769": {
+        "algorithms": [
+            {
+                "default": true,
+                "file_name": "Flash/LPC_IAP_512.FLM",
+                "ram_size": 4064,
+                "ram_start": 268435456,
+                "size": 524288,
+                "start": 0
+            }
+        ],
+        "family": "LPC1700 Series",
+        "from_pack": {
+            "pack": "LPC1700_DFP",
+            "url": "http://www.keil.com/pack/",
+            "vendor": "Keil",
+            "version": "2.5.0"
+        },
+        "memories": {
+            "IRAM1": {
+                "access": {
+                    "execute": false,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": true
+                },
+                "default": true,
+                "size": 32768,
+                "start": 268435456,
+                "startup": false
+            },
+            "IRAM2": {
+                "access": {
+                    "execute": false,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": true
+                },
+                "default": true,
+                "size": 32768,
+                "start": 537378816,
+                "startup": false
+            },
+            "IROM1": {
+                "access": {
+                    "execute": true,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": false
+                },
+                "default": true,
+                "size": 524288,
+                "start": 0,
+                "startup": true
+            }
+        },
+        "name": "LPC1769",
+        "processor": {
+            "Symmetric": {
+                "core": "CortexM3",
+                "fpu": "None",
+                "mpu": "Present",
+                "units": 1
+            }
+        },
+        "sectors": [
+            [
+                0,
+                4096
+            ],
+            [
+                65536,
+                32768
+            ]
+        ],
+        "sub_family": "LPC176x",
+        "vendor": "NXP:11"
+    },
     "LPC54114J256BD64": {
         "algorithms": [
             {
@@ -1731,21 +1818,6 @@
             "version": "11.0.0"
         },
         "memories": {
-            "EEPROM": {
-                "access": {
-                    "execute": true,
-                    "non_secure": false,
-                    "non_secure_callable": false,
-                    "peripheral": false,
-                    "read": true,
-                    "secure": false,
-                    "write": false
-                },
-                "default": false,
-                "size": 16384,
-                "start": 1074823168,
-                "startup": false
-            },
             "PROGRAM_FLASH": {
                 "access": {
                     "execute": true,
@@ -1760,6 +1832,21 @@
                 "size": 524288,
                 "start": 0,
                 "startup": true
+            },
+            "EEPROM": {
+                "access": {
+                    "execute": true,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": false
+                },
+                "default": false,
+                "size": 16384,
+                "start": 1074823168,
+                "startup": false
             },
             "SRAMX": {
                 "access": {
@@ -1821,6 +1908,135 @@
                 0,
                 32768
             ]
+        ],
+        "sub_family": null,
+        "vendor": "NXP:11"
+    },
+    "LPC54606J512BD100": {
+        "algorithms": [
+            {
+                "default": true,
+                "file_name": "devices/LPC54606/arm/LPC5460x_512.FLM",
+                "ram_size": 8192,
+                "ram_start": 536870912,
+                "size": 524288,
+                "start": 0,
+                "style": "Keil"
+            },
+            {
+                "default": true,
+                "file_name": "devices/LPC54606/arm/LPC5460x_MT25QL128.FLM",
+                "ram_size": 8192,
+                "ram_start": 536870912,
+                "size": 134217728,
+                "start": 268435456,
+                "style": "Keil"
+            }
+        ],
+        "family": "LPC54606",
+        "from_pack": {
+            "pack": "LPC54606_DFP",
+            "url": "https://mcuxpresso.nxp.com/cmsis_pack/repo/",
+            "vendor": "NXP",
+            "version": "25.03.00"
+        },
+        "memories": {
+            "PROGRAM_FLASH": {
+                "access": {
+                    "execute": true,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": false
+                },
+                "default": true,
+                "p_name": null,
+                "size": 524288,
+                "start": 0,
+                "startup": true
+            },
+            "EEPROM": {
+                "access": {
+                    "execute": true,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": false
+                },
+                "default": true,
+                "p_name": null,
+                "size": 16384,
+                "start": 1074823168,
+                "startup": false
+            },
+            "SRAMX": {
+                "access": {
+                    "execute": false,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": true
+                },
+                "default": true,
+                "p_name": null,
+                "size": 32768,
+                "start": 67108864,
+                "startup": false
+            },
+            "SRAM_UPPER": {
+                "access": {
+                    "execute": false,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": true
+                },
+                "default": true,
+                "p_name": null,
+                "size": 163840,
+                "start": 536870912,
+                "startup": false
+            },
+            "USB_RAM": {
+                "access": {
+                    "execute": false,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": true
+                },
+                "default": true,
+                "p_name": null,
+                "size": 8192,
+                "start": 1074790400,
+                "startup": false
+            }
+        },
+        "name": "LPC54606J512BD100",
+        "processors": [
+            {
+                "address": null,
+                "ap": 0,
+                "apid": null,
+                "core": "CortexM4",
+                "default_reset_sequence": null,
+                "dp": 0,
+                "fpu": "SinglePrecision",
+                "mpu": "Present",
+                "name": null,
+                "svd": "devices/LPC54606/LPC54606.xml",
+                "unit": 0
+            }
         ],
         "sub_family": null,
         "vendor": "NXP:11"
@@ -7704,7 +7920,8 @@
                 "start": 134217728,
                 "startup": true
             },
-            "SRAM1_2": {
+            // Combined SRAMs 1, 2, and 3
+            "SRAM1_2_3": {
                 "access": {
                     "execute": true,
                     "non_secure": false,
@@ -7716,13 +7933,16 @@
                 },
                 "default": true,
                 "p_name": null,
-                "size": 327680,
-                "start": 536870912,
+                "size": 0xA0000, // 640 kiB
+                "start": 0x20000000,
                 "startup": false
             },
-            "SRAM3": {
+            // Backup SRAM. This is mentioned in the datasheet but neither the reference manual nor the CMSIS pack
+            // gives its address...
+            // Got this info from a forum post: https://community.st.com/t5/stm32-mcus-products/backup-sram-on-stm32h563/td-p/580633
+            "SRAM_BKUP": {
                 "access": {
-                    "execute": true,
+                    "execute": false,
                     "non_secure": false,
                     "non_secure_callable": false,
                     "peripheral": false,
@@ -7730,10 +7950,8 @@
                     "secure": false,
                     "write": true
                 },
-                "default": false,
-                "p_name": null,
-                "size": 327680,
-                "start": 537198592,
+                "size": 0x1000,
+                "start": 0x40036400,
                 "startup": false
             }
         },
@@ -9250,7 +9468,7 @@
                     "write": false
                 },
                 "default": true,
-                "size": 0x20000,
+                "size": 0x200000,
                 "start": 0x08000000,
                 "startup": true
             },
@@ -9519,7 +9737,7 @@
                     "write": false
                 },
                 "default": true,
-                "size": 0x20000,
+                "size": 0x200000,
                 "start": 0x08000000,
                 "startup": true
             },
@@ -11489,6 +11707,94 @@
             ]
         ],
         "sub_family": "STM32L562",
+        "vendor": "STMicroelectronics:13"
+    },
+	"STM32U083RCTx": {
+        "algorithms": [
+            {
+                "default": true,
+                "file_name": "CMSIS/Flash/STM32U0xx_256k.FLM",
+                "ram_size": 8192,
+                "ram_start": 536870912,
+                "size": 262144,
+                "start": 134217728,
+                "style": "Keil"
+            }
+        ],
+        "family": "STM32U0 Series",
+        "from_pack": {
+            "pack": "STM32U0xx_DFP",
+            "url": "https://www.keil.com/pack/",
+            "vendor": "Keil",
+            "version": "1.0.0"
+        },
+        "memories": {
+            "IROM1": {
+                "access": {
+                    "execute": true,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": false
+                },
+                "default": true,
+                "p_name": null,
+                "size": 262144,
+                "start": 134217728,
+                "startup": true
+            },
+            "SRAM1": {
+                "access": {
+                    "execute": true,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": true
+                },
+                "default": true,
+                "p_name": null,
+                "size": 32768,
+                "start": 536870912,
+                "startup": false
+            },
+            "SRAM2": {
+                "access": {
+                    "execute": true,
+                    "non_secure": false,
+                    "non_secure_callable": false,
+                    "peripheral": false,
+                    "read": true,
+                    "secure": false,
+                    "write": true
+                },
+                "default": false,
+                "p_name": null,
+                "size": 8192,
+                "start": 536903680,
+                "startup": false
+            }
+        },
+        "name": "STM32U083RCTx",
+        "processors": [
+            {
+                "address": null,
+                "ap": 0,
+                "apid": null,
+                "core": "CortexM0Plus",
+                "default_reset_sequence": null,
+                "dp": 0,
+                "fpu": "None",
+                "mpu": "Present",
+                "name": null,
+                "svd": "CMSIS/SVD/STM32U083.svd",
+                "unit": 0
+            }
+        ],
+        "sub_family": "STM32U083",
         "vendor": "STMicroelectronics:13"
     },
     "STM32U575ZITx": {

@@ -21,9 +21,12 @@
  * SOFTWARE.
  */
 
+#include "mbed-target-config.h"
+
 #if DEVICE_SERIAL
 
 #include "serial_api.h"
+#include "mbed_wait_api.h"
 
 #include "mbed_assert.h"
 #include "PeripheralPins.h"
@@ -121,9 +124,9 @@ void uart_configure_pin_function(PinName pin, UARTName uart, const PinMap *map);
 void serial_init(serial_t *obj, PinName tx, PinName rx)
 {
     // determine the UART to use
-    UARTName uart_tx = (UARTName)pinmap_peripheral(tx, serial_tx_pinmap());
-    UARTName uart_rx = (UARTName)pinmap_peripheral(rx, serial_rx_pinmap());
-    UARTName uart = (UARTName)pinmap_merge(uart_tx, uart_rx);
+    uint32_t uart_tx = pinmap_peripheral(tx, serial_tx_pinmap());
+    uint32_t uart_rx = pinmap_peripheral(rx, serial_rx_pinmap());
+    uint32_t uart = pinmap_merge(uart_tx, uart_rx);
     MBED_ASSERT((int)uart != NC);
     obj->serial.uart_control = &ap3_uart_control[uart];
     obj->serial.uart_control->inst = uart;
@@ -140,12 +143,13 @@ void serial_init(serial_t *obj, PinName tx, PinName rx)
         obj->serial.uart_control->cfg.ui32RxBufferSize = 0;
         obj->serial.uart_control->cfg.ui32TxBufferSize = 0;
 
-        obj->serial.uart_control->cfg.ui32FifoLevels = AM_HAL_UART_RX_FIFO_7_8;
+        // Mbed expects an interrupt whenever we have at least one char in the Rx FIFO.
+        obj->serial.uart_control->cfg.ui32FifoLevels = AM_HAL_UART_RX_FIFO_1_8;
 
         // start UART instance
-        MBED_ASSERT(am_hal_uart_initialize(uart, &(obj->serial.uart_control->handle)) == AM_HAL_STATUS_SUCCESS);
-        MBED_ASSERT(am_hal_uart_power_control(obj->serial.uart_control->handle, AM_HAL_SYSCTRL_WAKE, false) == AM_HAL_STATUS_SUCCESS);
-        MBED_ASSERT(am_hal_uart_configure_fifo(obj->serial.uart_control->handle, &(obj->serial.uart_control->cfg), false) == AM_HAL_STATUS_SUCCESS);
+        MBED_CHECK_AM_HAL_CALL(am_hal_uart_initialize(uart, &(obj->serial.uart_control->handle)));
+        MBED_CHECK_AM_HAL_CALL(am_hal_uart_power_control(obj->serial.uart_control->handle, AM_HAL_SYSCTRL_WAKE, false));
+        MBED_CHECK_AM_HAL_CALL(am_hal_uart_configure_fifo(obj->serial.uart_control->handle, &(obj->serial.uart_control->cfg), false));
 
         // set default format
         serial_format(obj, 8, ParityNone, 1);
@@ -161,7 +165,7 @@ void serial_free(serial_t *obj)
 void serial_baud(serial_t *obj, int baudrate)
 {
     obj->serial.uart_control->cfg.ui32BaudRate = (uint32_t)baudrate;
-    MBED_ASSERT(am_hal_uart_configure_fifo(obj->serial.uart_control->handle, &(obj->serial.uart_control->cfg), false) == AM_HAL_STATUS_SUCCESS);
+    MBED_CHECK_AM_HAL_CALL(am_hal_uart_configure_fifo(obj->serial.uart_control->handle, &(obj->serial.uart_control->cfg), false));
 }
 
 void serial_format(serial_t *obj, int data_bits, SerialParity parity, int stop_bits)
@@ -218,7 +222,7 @@ void serial_format(serial_t *obj, int data_bits, SerialParity parity, int stop_b
     obj->serial.uart_control->cfg.ui32DataBits = (uint32_t)am_hal_data_bits;
     obj->serial.uart_control->cfg.ui32Parity = (uint32_t)am_hal_parity;
     obj->serial.uart_control->cfg.ui32StopBits = (uint32_t)am_hal_stop_bits;
-    MBED_ASSERT(am_hal_uart_configure_fifo(obj->serial.uart_control->handle, &(obj->serial.uart_control->cfg), false) == AM_HAL_STATUS_SUCCESS);
+    MBED_CHECK_AM_HAL_CALL(am_hal_uart_configure_fifo(obj->serial.uart_control->handle, &(obj->serial.uart_control->cfg), false));
 }
 
 void serial_irq_handler(serial_t *obj, uart_irq_handler handler, uint32_t id)
@@ -233,23 +237,24 @@ void serial_irq_set(serial_t *obj, SerialIrq irq, uint32_t enable)
     if (enable) {
         switch (irq) {
             case RxIrq:
-                MBED_ASSERT(am_hal_uart_interrupt_enable(obj->serial.uart_control->handle, AM_HAL_UART_INT_RX) == AM_HAL_STATUS_SUCCESS);
+                MBED_CHECK_AM_HAL_CALL(am_hal_uart_interrupt_enable(obj->serial.uart_control->handle, AM_HAL_UART_INT_RX));
                 break;
             case TxIrq:
-                MBED_ASSERT(am_hal_uart_interrupt_enable(obj->serial.uart_control->handle, AM_HAL_UART_INT_TXCMP) == AM_HAL_STATUS_SUCCESS);
+                MBED_CHECK_AM_HAL_CALL(am_hal_uart_interrupt_enable(obj->serial.uart_control->handle, AM_HAL_UART_INT_TXCMP));
                 break;
             default:
                 break;
         }
         // NVIC_SetVector(uart_irqs[obj->serial.index], vector);
+        NVIC_ClearPendingIRQ((IRQn_Type)(UART0_IRQn + obj->serial.uart_control->inst));
         NVIC_EnableIRQ((IRQn_Type)(UART0_IRQn + obj->serial.uart_control->inst));
     } else { // disable
         switch (irq) {
             case RxIrq:
-                MBED_ASSERT(am_hal_uart_interrupt_disable(obj->serial.uart_control->handle, AM_HAL_UART_INT_RX) == AM_HAL_STATUS_SUCCESS);
+                MBED_CHECK_AM_HAL_CALL(am_hal_uart_interrupt_disable(obj->serial.uart_control->handle, AM_HAL_UART_INT_RX));
                 break;
             case TxIrq:
-                MBED_ASSERT(am_hal_uart_interrupt_disable(obj->serial.uart_control->handle, AM_HAL_UART_INT_TXCMP) == AM_HAL_STATUS_SUCCESS);
+                MBED_CHECK_AM_HAL_CALL(am_hal_uart_interrupt_disable(obj->serial.uart_control->handle, AM_HAL_UART_INT_TXCMP));
                 break;
             default:
                 break;
@@ -273,6 +278,29 @@ int serial_getc(serial_t *obj)
 
     do {
         am_hal_uart_transfer(obj->serial.uart_control->handle, &am_hal_uart_xfer_read_single);
+
+        // Seeing very odd behavior with this uart, where digital glitches on the line can cause the
+        // framing error bit to set and then cause at least some of the data within the Rx FIFO to be
+        // deleted. This causes an infinite hang, as Mbed requires serial_getc() to return a character
+        // if serial_readable() returns true. This UART is not well documented, so unable to say if this
+        // is an errata or some sort of odd design choice.
+        // To avoid this, if we did not get any data and the framing error bit is set, simply clear the flag
+        // and return an arbitrary character. This is a little awkward but prevents a hard-to-debug hang.
+        if(bytes_read == 0 && UARTn(obj->serial.uart_control->inst)->RSR_b.FESTAT)
+        {
+            UARTn(obj->serial.uart_control->inst)->RSR_b.FESTAT = 0;
+            return 'x';
+        }
+
+        // Similar to above but with the overflow flag. Without this logic we can hang when receiving
+        // at 921600 baud. Oddly, the overflow flag in RSR does not seem to be reliable, but the overflow
+        // flag in IES seems to be. Not sure why this UART has two overflow flags in the first place, smh...
+        if(bytes_read == 0 && UARTn(obj->serial.uart_control->inst)->IES_b.OERIS)
+        {
+            UARTn(obj->serial.uart_control->inst)->IEC_b.OEIC = 1;
+            return 'x';
+        }
+
     } while (bytes_read == 0);
 
     return (int)rx_c;
@@ -332,21 +360,6 @@ void serial_pinout_tx(PinName tx)
     MBED_ASSERT(0);
 }
 
-#if DEVICE_SERIAL_FC
-
-void serial_set_flow_control(serial_t *obj, FlowControl type, PinName rxflow, PinName txflow)
-{
-    // todo:
-    MBED_ASSERT(0);
-}
-
-void serial_set_flow_control_direct(serial_t *obj, FlowControl type, const serial_fc_pinmap_t *pinmap)
-{
-    // todo:
-    MBED_ASSERT(0);
-}
-#endif
-
 const PinMap *serial_tx_pinmap(void)
 {
     return PinMap_UART_TX;
@@ -357,19 +370,6 @@ const PinMap *serial_rx_pinmap(void)
     return PinMap_UART_RX;
 }
 
-#if DEVICE_SERIAL_FC
-
-const PinMap *serial_cts_pinmap(void)
-{
-    return PinMap_UART_CTS;
-}
-
-const PinMap *serial_rts_pinmap(void)
-{
-    return PinMap_UART_RTS;
-}
-#endif
-
 static inline void uart_irq(uint32_t instance)
 {
     void *handle = ap3_uart_control[instance].handle;
@@ -377,8 +377,8 @@ static inline void uart_irq(uint32_t instance)
 
     // check flags
     uint32_t status = 0x00;
-    MBED_ASSERT(am_hal_uart_interrupt_status_get(handle, &status, true) == AM_HAL_STATUS_SUCCESS);
-    MBED_ASSERT(am_hal_uart_interrupt_clear(handle, status) == AM_HAL_STATUS_SUCCESS);
+    MBED_CHECK_AM_HAL_CALL(am_hal_uart_interrupt_status_get(handle, &status, true));
+    MBED_CHECK_AM_HAL_CALL(am_hal_uart_interrupt_clear(handle, status));
 
     if (ap3_uart_control[instance].serial_irq_id != 0) {
         if (status & AM_HAL_UART_INT_TXCMP) { // for transmit complete

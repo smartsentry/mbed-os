@@ -34,7 +34,9 @@ function(gen_upload_target TARGET_NAME BINARY_FILE)
 		${STM32CUBE_CONNECT_COMMAND}
 		${STM32CUBE_UPLOAD_PROBE_ARGS} # probe arg must be immediately after -c command as it gets appended to -c
 		-w ${BINARY_FILE} ${MBED_UPLOAD_BASE_ADDR}
-		-rst)
+		-rst
+		VERBATIM
+		USES_TERMINAL)
 
 endfunction(gen_upload_target)
 
@@ -55,6 +57,12 @@ set(UPLOAD_GDBSERVER_DEBUG_COMMAND
 set(UPLOAD_LAUNCH_COMMANDS
 	"monitor reset"
 	"load"
+
+	# Tell GDB to allow reads to any region of memory, ignoring the memory map sent by the GDB server.
+	# This is needed because often the GDB server's memory map doesn't include peripheral memory, so
+	# the user can't inspect peripheral registers.
+	"set mem inaccessible-by-default off"
+
 	"tbreak main"
 	"monitor reset"
 )

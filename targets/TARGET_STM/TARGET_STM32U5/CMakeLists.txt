@@ -18,6 +18,7 @@ target_include_directories(mbed-stm32u5
 
 target_sources(mbed-stm32u5
     INTERFACE
+        clock_cfg/system_clock.c
         analogin_device.c
         analogout_device.c
         flash_api.c
@@ -26,6 +27,7 @@ target_sources(mbed-stm32u5
         i2c_device.c
         serial_device.c
         spi_api.c
+        cache.c
 )
 
 target_link_libraries(mbed-stm32u5 INTERFACE mbed-stm mbed-stm32u5cube-fw)

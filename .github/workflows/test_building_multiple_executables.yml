@@ -14,7 +14,14 @@ jobs:
         # Note: pip>=20.3 is needed to install dependencies of cysecuretools
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install -r tools/requirements.txt
+          
+          # Remove mbed-tools package that comes with the docker image, it conflicts with the one we want to install
+          python3 -m pip uninstall -y mbed-tools
+          
+          python3 -m pip install -e ./tools
+          
+          # Also install cysecuretools which is not installed automatically
+          python3 -m pip install 'cysecuretools~=6.0'
 
       # Note: For this CI job we use MBED_CREATE_PYTHON_VENV=FALSE so that we can make sure
       # this mode works.

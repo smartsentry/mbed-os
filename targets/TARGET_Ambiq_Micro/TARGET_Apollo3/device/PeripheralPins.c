@@ -17,6 +17,9 @@
 #include "PeripheralPins.h"
 #include "PeripheralPinConfigs.h"
 
+#include "am_hal_adc.h"
+#include "objects.h"
+
 /************RTC***************/
 const PinMap PinMap_RTC[] = {
     {NC, 0, 0},
@@ -24,6 +27,17 @@ const PinMap PinMap_RTC[] = {
 
 /************ADC***************/
 const PinMap PinMap_ADC[] = {
+    {11, ADC0_2, AM_HAL_PIN_11_ADCSE2},
+    {12, ADC0_9, AM_HAL_PIN_12_ADCD0NSE9},
+    {13, ADC0_8, AM_HAL_PIN_13_ADCD0PSE8},
+    {16, ADC0_0, AM_HAL_PIN_16_ADCSE0},
+    {29, ADC0_1, AM_HAL_PIN_29_ADCSE1},
+    {31, ADC0_3, AM_HAL_PIN_31_ADCSE3},
+    {32, ADC0_4, AM_HAL_PIN_32_ADCSE4},
+    {33, ADC0_5, AM_HAL_PIN_33_ADCSE5},
+    {34, ADC0_6, AM_HAL_PIN_34_ADCSE6},
+    {35, ADC0_7, AM_HAL_PIN_35_ADCSE7},
+    {INT_TEMP_SENSOR, ADC0_TEMP, 0},
     {NC, NC, 0}
 };
 
@@ -253,6 +267,113 @@ const PinMap PinMap_SPI_SSEL[] = {
 };
 
 /************PWM***************/
-const PinMap PinMap_PWM[] = {
+// Note: The Apollo3 has fairly flexible PWM pin mapping options. Each IO pin which has a PWM function
+// can actually map to one of 6 different PWM module outputs. However, there are as many PWM module
+// outputs as there are pins, so we don't need to use this just to give every pin its own PWM output.
+// For now, we always use the first possible option (Output Selection 2 in Table 814).
+const PinMap PinMap_PWM_OUT[] = {
+    {IO_12, CTIMER_A0_OUT1, AM_HAL_PIN_12_CTIM0},
+    {IO_25, CTIMER_A0_OUT2, AM_HAL_PIN_25_CTIM1},
+    {IO_13, CTIMER_B0_OUT1, AM_HAL_PIN_13_CTIM2},
+    {IO_26, CTIMER_B0_OUT2, AM_HAL_PIN_26_CTIM3},
+    {IO_18, CTIMER_A1_OUT1, AM_HAL_PIN_18_CTIM4},
+    {IO_27, CTIMER_A1_OUT2, AM_HAL_PIN_27_CTIM5},
+    {IO_19, CTIMER_B1_OUT1, AM_HAL_PIN_19_CTIM6},
+    {IO_28, CTIMER_B1_OUT2, AM_HAL_PIN_28_CTIM7},
+    {IO_5,  CTIMER_A2_OUT1, AM_HAL_PIN_5_CTIM8},
+    {IO_29, CTIMER_A2_OUT2, AM_HAL_PIN_29_CTIM9},
+    {IO_6,  CTIMER_B2_OUT1, AM_HAL_PIN_6_CTIM10},
+    {IO_30, CTIMER_B2_OUT2, AM_HAL_PIN_30_CTIM11},
+    {IO_22, CTIMER_A3_OUT1, AM_HAL_PIN_22_CTIM12},
+    {IO_31, CTIMER_A3_OUT2, AM_HAL_PIN_31_CTIM13},
+    {IO_23, CTIMER_B3_OUT1, AM_HAL_PIN_23_CTIM14},
+    {IO_32, CTIMER_B3_OUT2, AM_HAL_PIN_32_CTIM15},
+    {IO_42, CTIMER_A4_OUT1, AM_HAL_PIN_42_CTIM16},
+    {IO_4,  CTIMER_A4_OUT2, AM_HAL_PIN_4_CTIM17},
+    {IO_43, CTIMER_B4_OUT1, AM_HAL_PIN_43_CTIM18},
+    {IO_7,  CTIMER_B4_OUT2, AM_HAL_PIN_7_CTIM19},
+    {IO_44, CTIMER_A5_OUT1, AM_HAL_PIN_44_CTIM20},
+    {IO_24, CTIMER_A5_OUT2, AM_HAL_PIN_24_CTIM21},
+    {IO_45, CTIMER_B5_OUT2, AM_HAL_PIN_45_CTIM22},
+    {IO_33, CTIMER_B5_OUT2, AM_HAL_PIN_33_CTIM23},
+    {IO_46, CTIMER_A6_OUT1, AM_HAL_PIN_46_CTIM24},
+    {IO_47, CTIMER_B6_OUT1, AM_HAL_PIN_47_CTIM26},
+    {IO_35, CTIMER_B6_OUT2, AM_HAL_PIN_35_CTIM27},
+
+    // Different from normal mapping since output selection 2 doesn't give a unique timer on this pin
+    {IO_39, CTIMER_A6_OUT2, AM_HAL_PIN_39_CTIM25},
+
+    // For these last four, we have to duplicate other timers, as CTIMER_x7 is
+    // used for the us ticker.
+    {IO_48, CTIMER_A3_OUT1, AM_HAL_PIN_48_CTIM28},
+    {IO_37, CTIMER_A3_OUT2, AM_HAL_PIN_37_CTIM29},
+    {IO_49, CTIMER_B3_OUT1, AM_HAL_PIN_49_CTIM30},
+    {IO_11, CTIMER_B3_OUT2, AM_HAL_PIN_11_CTIM31},
+
     {NC, NC, 0}
 };
+
+/************ GPIO ***************/
+
+// Note that this is only used for testing, so that the test knows what are valid GPIO pins.
+// It's not used in normal usage.
+// Also, only the "pin" field is significant here. Other fields are don't cares.
+
+const PinMap PinMap_GPIO[] = {
+    {IO_0, 0, 0},
+    {IO_1, 0, 0},
+    {IO_2, 0, 0},
+    {IO_3, 0, 0},
+    {IO_4, 0, 0},
+    {IO_5, 0, 0},
+    {IO_6, 0, 0},
+    {IO_7, 0, 0},
+    {IO_8, 0, 0},
+    {IO_9, 0, 0},
+    {IO_10, 0, 0},
+    {IO_11, 0, 0},
+    {IO_12, 0, 0},
+    {IO_13, 0, 0},
+    {IO_14, 0, 0},
+    {IO_15, 0, 0},
+    {IO_16, 0, 0},
+    {IO_17, 0, 0},
+    {IO_18, 0, 0},
+    {IO_19, 0, 0},
+    {IO_20, 0, 0},
+    {IO_21, 0, 0},
+    {IO_22, 0, 0},
+    {IO_23, 0, 0},
+    {IO_24, 0, 0},
+    {IO_25, 0, 0},
+    {IO_26, 0, 0},
+    {IO_27, 0, 0},
+    {IO_28, 0, 0},
+    {IO_29, 0, 0},
+    {IO_39, 0, 0},
+    {IO_40, 0, 0},
+    {IO_41, 0, 0},
+    {IO_44, 0, 0},
+    {IO_47, 0, 0},
+    {IO_48, 0, 0},
+    {IO_49, 0, 0},
+
+    // Apollo3 I/O pins - BGA package only
+    {IO_30, 0, 0},
+    {IO_31, 0, 0},
+    {IO_32, 0, 0},
+    {IO_33, 0, 0},
+    {IO_34, 0, 0},
+    {IO_35, 0, 0},
+    {IO_36, 0, 0},
+    {IO_37, 0, 0},
+    {IO_38, 0, 0},
+    {IO_42, 0, 0},
+    {IO_43, 0, 0},
+    {IO_45, 0, 0},
+    {IO_46, 0, 0},
+
+    {NC, NC, 0}
+};
+
+

@@ -87,11 +87,14 @@ struct spi_s {
     PinName pin_sclk;
     PinName pin_ssel;
 
+    // Current word size of the SPI
+    uint8_t word_size_bits;
+
     // Async transfer related fields
     DMAUsage    dma_usage;
     int         dma_chn_id_tx;
     int         dma_chn_id_rx;
-    uint32_t    event;
+    uint32_t    event_mask;
     uint32_t    txrx_rmn;       // Track tx/rx frames remaining in interrupt way
 };
 

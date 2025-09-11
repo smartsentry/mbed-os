@@ -16,7 +16,7 @@
 /**
   * This file configures the system clock as follows:
   *--------------------------------------------------------------------
-  * System clock source   | 1- USE_PLL_HSE_EXTC 
+  * System clock source   | 1- USE_PLL_HSE_EXTC
   *                       | 2- USE_PLL_HSE_XTAL
   *                       | 3- USE_PLL_HSI (internal 64 MHz clock)
   *--------------------------------------------------------------------
@@ -108,7 +108,7 @@ MBED_WEAK uint8_t SetSysClock_PLL_HSE(uint8_t bypass)
 #endif
 if(HSE_VALUE % 2000000 == 0)
 {
-    RCC_OscInitStruct.PLL.PLLM = HSE_VALUE / 2000000; // Divide down input clock to 2MHz 
+    RCC_OscInitStruct.PLL.PLLM = HSE_VALUE / 2000000; // Divide down input clock to 2MHz
     RCC_OscInitStruct.PLL.PLLN = 250; // Multiply up to 500MHz VCO clock
     RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1_VCIRANGE_1;
 }
@@ -125,8 +125,9 @@ else // Divisible by 5MHz
     RCC_OscInitStruct.PLL.PLLP = 2;
     // Most of the SPI busses are clocked off of PLL1Q, and the max usable frequency for SPI is about
     // ~50MHz.  Plus, SPI has only limited, power-of-2 prescaler options so a high input clock really hurts
-    // its clock resolution.  So, give it a much lower input clock.
-    RCC_OscInitStruct.PLL.PLLQ = 10; // output freq = 50MHz
+    // its clock resolution.  So, give it a lower input clock.
+    // Note PLL1Q is also used by the CAN FD, 100MHz is needed to support a data rate of 5Mbit/s.
+    RCC_OscInitStruct.PLL.PLLQ = 5; // output freq = 100MHz
     RCC_OscInitStruct.PLL.PLLR = 2;
     RCC_OscInitStruct.PLL.PLLFRACN = 0;
     RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1_VCORANGE_WIDE;
@@ -194,8 +195,8 @@ uint8_t SetSysClock_PLL_HSI(void)
     RCC_OscInitStruct.PLL.PLLP = 2;
     // Most of the SPI busses are clocked off of PLL1Q, and the max usable frequency for SPI is about
     // ~50MHz.  Plus, SPI has only limited, power-of-2 prescaler options so a high input clock really hurts
-    // its clock resolution.  So, give it a much lower input clock.
-    RCC_OscInitStruct.PLL.PLLQ = 10; // output freq = 50MHz
+    // its clock resolution.  So, give it a lower input clock.
+    RCC_OscInitStruct.PLL.PLLQ = 5; // output freq = 100MHz
     RCC_OscInitStruct.PLL.PLLR = 2;
     RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1_VCIRANGE_3;
     RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1_VCORANGE_WIDE;

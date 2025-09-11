@@ -38,65 +38,86 @@ extern "C"
 
 typedef enum
 {
-    // Digital naming
-    D0 = 25,
-    D1 = 24,
-    D2 = 35,
-    D3 = 4,
-    D4 = 22,
-    D5 = 23,
-    D6 = 27,
-    D7 = 28,
-    D8 = 32,
-    D9 = 12,
-    D10 = 13,
-    D11 = 7,
-    D12 = 6,
-    D13 = 5,
-    D14 = 40,
-    D15 = 39,
-    D16 = 29,
-    D17 = 11,
-    D18 = 34,
-    D19 = 33,
-    D20 = 16,
-    D21 = 31,
+    // Apollo3 I/O pins - CSP and BGA packages
+    IO_0 = 0,
+    IO_1 = 1,
+    IO_2 = 2,
+    IO_3 = 3,
+    IO_4 = 4,
+    IO_5 = 5,
+    IO_6 = 6,
+    IO_7 = 7,
+    IO_8 = 8,
+    IO_9 = 9,
+    IO_10 = 10,
+    IO_11 = 11,
+    IO_12 = 12,
+    IO_13 = 13,
+    IO_14 = 14,
+    IO_15 = 15,
+    IO_16 = 16,
+    IO_17 = 17,
+    IO_18 = 18,
+    IO_19 = 19,
+    IO_20 = 20,
+    IO_21 = 21,
+    IO_22 = 22,
+    IO_23 = 23,
+    IO_24 = 24,
+    IO_25 = 25,
+    IO_26 = 26,
+    IO_27 = 27,
+    IO_28 = 28,
+    IO_29 = 29,
+    IO_39 = 39,
+    IO_40 = 40,
+    IO_41 = 41,
+    IO_44 = 44,
+    IO_47 = 47,
+    IO_48 = 48,
+    IO_49 = 49,
 
-    // Analog naming
-    A0 = D16,
-    A1 = D17,
-    A2 = D18,
-    A3 = D19,
-    A4 = D20,
-    A5 = D21,
-    A6 = D2,
-    // A7 = ??
-    A8 = D8,
-    A9 = D9,
-    A10 = D10,
-    
-    // LEDs
-    LED_BLUE = AM_BSP_GPIO_LED_BLUE,
+    // Apollo3 I/O pins - BGA package only
+    IO_30 = 30,
+    IO_31 = 31,
+    IO_32 = 32,
+    IO_33 = 33,
+    IO_34 = 34,
+    IO_35 = 35,
+    IO_36 = 36,
+    IO_37 = 37,
+    IO_38 = 38,
+    IO_42 = 42,
+    IO_43 = 43,
+    IO_45 = 45,
+    IO_46 = 46,
 
-    // mbed original LED naming
-    LED1 = AM_BSP_GPIO_LED0,
-    LED2 = A5,
+#ifdef TARGET_FF_ARDUINO_UNO
+    // Arduino form factor pins
+    ARDUINO_UNO_D0 = IO_25,
+    ARDUINO_UNO_D1 = IO_24,
+    ARDUINO_UNO_D2 = IO_35,
+    ARDUINO_UNO_D3 = IO_4,
+    ARDUINO_UNO_D4 = IO_22,
+    ARDUINO_UNO_D5 = IO_23,
+    ARDUINO_UNO_D6 = IO_27,
+    ARDUINO_UNO_D7 = IO_28,
+    ARDUINO_UNO_D8 = IO_32,
+    ARDUINO_UNO_D9 = IO_12,
+    ARDUINO_UNO_D10 = IO_13,
+    ARDUINO_UNO_D11 = IO_7,
+    ARDUINO_UNO_D12 = IO_6,
+    ARDUINO_UNO_D13 = IO_5,
+    ARDUINO_UNO_D14 = IO_40,
+    ARDUINO_UNO_D15 = IO_39,
 
-    // LED naming by digital pin number
-    LED13 = AM_BSP_GPIO_LED13,
-
-    // I2C
-    I2C_SCL = AM_BSP_QWIIC_I2C_SCL_PIN,
-    I2C_SDA = AM_BSP_QWIIC_I2C_SDA_PIN,
-
-    // Qwiic
-    QWIIC_SCL = I2C_SCL,
-    QWIIC_SDA = I2C_SDA,
-
-    // SPI
-    SPI_CLK = AM_BSP_PRIM_SPI_CLK_PIN,
-    SPI_SDO = AM_BSP_PRIM_SPI_SDO_PIN,
-    SPI_SDI = AM_BSP_PRIM_SPI_SDI_PIN,
+    ARDUINO_UNO_A0 = IO_29,
+    ARDUINO_UNO_A1 = IO_11,
+    ARDUINO_UNO_A2 = IO_34,
+    ARDUINO_UNO_A3 = IO_33,
+    ARDUINO_UNO_A4 = IO_16,
+    ARDUINO_UNO_A5 = IO_31,
+#endif
 
     // UART
     SERIAL_TX = AM_BSP_PRIM_UART_TX_PIN,
@@ -104,12 +125,23 @@ typedef enum
     CONSOLE_TX = SERIAL_TX,
     CONSOLE_RX = SERIAL_RX,
 
-    SERIAL1_TX = D1,
-    SERIAL1_RX = D0,
+    SERIAL1_TX = IO_24,
+    SERIAL1_RX = IO_25,
+
+    // Not a real pin on the device, but can be passed to AnalogIn to read the internal temperature sensor
+    INT_TEMP_SENSOR = 0x10000,
 
     // Not connected
     NC = NC_VAL
 } PinName;
+
+// LEDs
+#define LED1 IO_5 // Blue LED
+
+// I2C bus
+// note: I2C_SCL and I2C_SDA defines are provided by the FF_ARDUINO_UNO header
+#define QWIIC_SCL I2C_SCL
+#define QWIIC_SDA I2C_SDA
 
 #if defined(MBED_CONF_TARGET_STDIO_UART_TX)
 #define STDIO_UART_TX MBED_CONF_TARGET_STDIO_UART_TX

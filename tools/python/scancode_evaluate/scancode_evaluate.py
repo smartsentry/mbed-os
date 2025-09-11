@@ -100,6 +100,8 @@ def has_exempted_spdx_identifier(scanned_file_content):
             return True
         if spdx_find_result[0] == "LicenseRef-PBL":
             return True
+        if spdx_find_result[0] == "LicenseRef-scancode-arm-cortex-mx":
+            return True
         else:
             return False
     else:
@@ -212,7 +214,7 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def main():
     init_logger()
     args = parse_args()
     if pathlib.Path(args.scancode_output_path).is_file():
@@ -224,3 +226,6 @@ if __name__ == "__main__":
     else:
         userlog.warning("Could not find the scancode json file")
         sys.exit(ReturnCode.ERROR.value)
+
+if __name__ == "__main__":
+    main()

@@ -16,7 +16,6 @@
 */
 
 #include "cmsis_nvic.h"
-#include "../stm32_eth_region_size_calcs.h"
 
 M_CRASH_DATA_RAM_SIZE = 0x100;
 
@@ -35,8 +34,8 @@ MEMORY
 {
     FLASH       (rx)  : ORIGIN = MBED_CONFIGURED_ROM_BANK_IROM1_START, LENGTH = MBED_CONFIGURED_ROM_BANK_IROM1_SIZE
     SRAM_DTC   (xrw)  : ORIGIN = MBED_RAM_BANK_SRAM_DTC_START + MBED_VECTTABLE_RAM_SIZE, LENGTH = MBED_RAM_BANK_SRAM_DTC_SIZE - MBED_VECTTABLE_RAM_SIZE
-    SRAM       (xrw)  : ORIGIN = MBED_RAM_BANK_SRAM_AHB_START, LENGTH = MBED_RAM_BANK_SRAM_AHB_SIZE
-    SRAM_AXI   (xrw)  : ORIGIN = MBED_RAM_BANK_SRAM_AXI_START, LENGTH = MBED_RAM_BANK_SRAM_AXI_SIZE
+    SRAM_AHB   (xrw)  : ORIGIN = MBED_RAM_BANK_SRAM_AHB_START, LENGTH = MBED_RAM_BANK_SRAM_AHB_SIZE
+    SRAM       (xrw)  : ORIGIN = MBED_RAM_BANK_SRAM_AXI_START, LENGTH = MBED_RAM_BANK_SRAM_AXI_SIZE
     SRAM_D3    (xrw)  : ORIGIN = MBED_RAM_BANK_SRAM_D3_START, LENGTH = MBED_RAM_BANK_SRAM_D3_SIZE
     SRAM_ITC   (xrw)  : ORIGIN = MBED_RAM_BANK_SRAM_ITC_START, LENGTH = MBED_RAM_BANK_SRAM_ITC_SIZE
 }
@@ -113,7 +112,7 @@ SECTIONS
 
     __etext = .;
     _sidata = .;
-    
+
     .data : AT (__etext)
     {
         __data_start__ = .;
@@ -161,7 +160,7 @@ SECTIONS
         . = ALIGN(32);
         __uninitialized_end = .;
     } > SRAM
-    
+
     .bss :
     {
         . = ALIGN(8);
@@ -212,24 +211,11 @@ SECTIONS
         __CRASH_DATA_RAM_END__ = .; /* Define a global symbol at data end */
     } > SRAM_D3
 
-    /* Ethernet DMA descriptors should be at the start of SRAM_AXI because they need an MPU region.*/
-    .eth_descriptors (NOLOAD) : {
-        ASSERT(. == ORIGIN(SRAM_AXI), "Eth Descriptors region must be at the start of SRAM_D2");
-        PROVIDE(__eth_descriptors_start = .);
-        *(.EthDescriptors)
-        . = __eth_descriptors_start + STM32_DMA_DESCRIP_REGION_SIZE;
-    } >SRAM_AXI
-
-    /* Ethernet buffers are recommended to be in SRAM_AXI but don't need any special MPU region. */
-    .eth_buffers (NOLOAD) : {
-        *(.EthBuffers)
-    } >SRAM_AXI 
-
-    /* Use SRAM_AXI as additional heap */
+    /* Use SRAM_AHB as additional heap */
     .heap (NOLOAD):
     {
         PROVIDE(__mbed_sbrk_start = .);
-        . += (ORIGIN(SRAM_AXI) + LENGTH(SRAM_AXI) - .);
+        . += (ORIGIN(SRAM_AHB) + LENGTH(SRAM_AHB) - .);
         PROVIDE(__mbed_krbs_start = .);
-    } > SRAM_AXI
+    } > SRAM_AHB
 }

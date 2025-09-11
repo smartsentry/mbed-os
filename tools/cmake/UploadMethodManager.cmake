@@ -37,9 +37,9 @@ function(mbed_adjust_upload_debug_commands target)
     # GDB load command doesn't support binary format. Ignore OUTPUT_EXT
     # and fix to Intel Hex format.
     #
-    # NOTE: The <app>.hex file name needs to be quoted (\\\") to pass along
+    # NOTE: The <app>.hex file name needs to be quoted (\") to pass along
     #       to gdb correctly.
-    list(TRANSFORM MBED_UPLOAD_LAUNCH_COMMANDS APPEND " \\\"${HEX_FILE}\\\"" AT ${LOAD_INDEX})
+    list(TRANSFORM MBED_UPLOAD_LAUNCH_COMMANDS APPEND " \"${HEX_FILE}\"" AT ${LOAD_INDEX})
 
     # Update MBED_UPLOAD_LAUNCH_COMMANDS in cache
     set(MBED_UPLOAD_LAUNCH_COMMANDS ${MBED_UPLOAD_LAUNCH_COMMANDS} CACHE INTERNAL "" FORCE)
@@ -98,7 +98,7 @@ endif()
 # Load the upload method.
 # Upload methods are expected to refer to the following variables:
 # - MBED_UPLOAD_SERIAL_NUMBER - USB serial number of the mbed board or of the programmer
-# - MBED_UPLOAD_BASE_ADDR - Base address of the flash where the bin file will be updated
+# - MBED_UPLOAD_BASE_ADDR - Base address of the flash where the bin file will be written to
 #
 # Upload methods are expected to set the following variables:
 # - UPLOAD_${UPLOAD_METHOD}_FOUND - True iff the dependencies for this upload method were found
