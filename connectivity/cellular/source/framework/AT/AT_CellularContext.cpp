@@ -618,6 +618,8 @@ nsapi_error_t AT_CellularContext::open_data_channel()
     /* Initialize PPP
      * If blocking: mbed_ppp_init() is a blocking call, it will block until
                   connected, or timeout after 30 seconds*/
+    tr_info("nsapi_ppp_connect");
+
     nsapi_error_t err = nsapi_ppp_connect(_at.get_file_handle(), callback(this, &AT_CellularContext::ppp_status_cb), _uname, _pwd, (nsapi_ip_stack_t)_pdp_type);
     if (err) {
         tr_error("nsapi_ppp_connect failed");

@@ -42,7 +42,7 @@ extern "C" {
 
 /*! \brief Assert on best-fit buffer allocation failure */
 #ifndef WSF_BUF_ALLOC_BEST_FIT_FAIL_ASSERT
-#define WSF_BUF_ALLOC_BEST_FIT_FAIL_ASSERT FALSE
+#define WSF_BUF_ALLOC_BEST_FIT_FAIL_ASSERT true
 #endif
 
 /*! \brief Assert on buffer allocation failure */
@@ -52,7 +52,7 @@ extern "C" {
 
 /*! \brief Buffer histogram stats */
 #ifndef WSF_BUF_STATS_HIST
-#define WSF_BUF_STATS_HIST FALSE
+#define WSF_BUF_STATS_HIST TRUE
 #endif
 
 /**************************************************************************************************
@@ -70,7 +70,7 @@ extern "C" {
 
 #ifndef WSF_BUF_STATS
 /*! \brief Enable buffer allocation statistics. */
-#define WSF_BUF_STATS FALSE
+#define WSF_BUF_STATS TRUE
 #endif
 
 /**************************************************************************************************

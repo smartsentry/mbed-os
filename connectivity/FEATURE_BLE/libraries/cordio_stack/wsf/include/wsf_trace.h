@@ -244,13 +244,13 @@ bool_t WsfTokenService(void);
 /*! \brief 3 argument WSF error trace. */
 #define WSF_TRACE_ERR3(msg, var1, var2, var3)       WSF_TRACE3("WSF", "ERR",  msg, var1, var2, var3)
 /*! \brief 0 argument WSF buffer allocation trace. */
-#define WSF_TRACE_ALLOC0(msg)
+#define WSF_TRACE_ALLOC0(msg)                     WSF_TRACE0("WSF", "ALLOC", msg)
 /*! \brief 1 argument WSF buffer allocation trace. */
-#define WSF_TRACE_ALLOC1(msg, var1)
+#define WSF_TRACE_ALLOC1(msg, var1)               WSF_TRACE1("WSF", "ALLOC", msg, var1)
 /*! \brief 2 argument WSF buffer allocation trace. */
-#define WSF_TRACE_ALLOC2(msg, var1, var2)
+#define WSF_TRACE_ALLOC2(msg, var1, var2)       WSF_TRACE2("WSF", "ALLOC", msg, var1, var2)
 /*! \brief 3 argument WSF buffer allocation trace. */
-#define WSF_TRACE_ALLOC3(msg, var1, var2, var3)
+#define WSF_TRACE_ALLOC3(msg, var1, var2, var3)   WSF_TRACE3("WSF", "ALLOC", msg, var1, var2, var3)
 /*! \brief 0 argument WSF buffer free trace. */
 #define WSF_TRACE_FREE0(msg)
 /*! \brief 1 argument WSF buffer free trace. */

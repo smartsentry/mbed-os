@@ -198,6 +198,8 @@
 // Support Multicast
 #include "stdlib.h"
 #define LWIP_IGMP                   LWIP_IPV4
+#define LWIP_IGMP_TIMER_ONDEMAND    1
+#define LWIP_MLD6_TIMER_ONDEMAND    1
 #define LWIP_RAND()                 lwip_get_random()
 
 #define LWIP_COMPAT_SOCKETS         0

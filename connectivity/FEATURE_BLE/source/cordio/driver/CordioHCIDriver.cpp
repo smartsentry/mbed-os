@@ -89,13 +89,13 @@ void CordioHCIDriver::terminate()
 buf_pool_desc_t CordioHCIDriver::get_default_buffer_pool_description()
 {
     static union {
-        uint8_t buffer[2250];
+        uint8_t buffer[2250+512];
         uint64_t align;
     };
     static const wsfBufPoolDesc_t pool_desc[] = {
         {  16, 16 },
         {  32, 16 },
-        {  64, 8 },
+        {  64, 16 },//was 8
         { 128, 4 },
         { 272, 1 }
     };
