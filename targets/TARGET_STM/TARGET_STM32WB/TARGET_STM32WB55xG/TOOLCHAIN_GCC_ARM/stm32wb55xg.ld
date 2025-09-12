@@ -19,7 +19,7 @@
 
 
 #if !defined(MBED_APP_START)
-  #define MBED_APP_START  MBED_ROM_START
+  #define MBED_APP_START  MBED_CONFIGURED_ROM_START
 #endif
 
 #if !defined(MBED_APP_SIZE)
