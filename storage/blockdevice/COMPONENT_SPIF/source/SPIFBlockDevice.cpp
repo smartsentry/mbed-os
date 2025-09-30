@@ -850,6 +850,10 @@ int SPIFBlockDevice::exitPowerDown()
 		tr_error("Sending RDPD command FAILED");
 		return -1;
 	}
+
+    while(false == _is_mem_ready()) {
+        rtos::ThisThread::sleep_for(1ms);
+    } 
 	powerMode = SPIF_AWAKE;
 
     return 0;
