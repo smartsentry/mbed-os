@@ -940,7 +940,7 @@ bool get_bd_address(uint8_t *bd_addr)
     udn = LL_FLASH_GetUDN();
 
     if (udn != 0xFFFFFFFF) {
-        tr_info("Found Unique Device Number: %#06x", udn);
+        tr_info("Found Unique Device Number: %#06lx", udn);
 
         company_id = LL_FLASH_GetSTCompanyID();
         device_id = LL_FLASH_GetDeviceID();
