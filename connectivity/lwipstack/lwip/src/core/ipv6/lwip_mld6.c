@@ -528,7 +528,7 @@ mld6_tmr(void)
       group = group->next;
     }
   }
-#if LWIP_MLD6_TIMERS_ONDEMAND
+#if LWIP_MLD6_TIMER_ONDEMAND
   if (tmr_restart) {
     sys_timeout(MLD6_TMR_INTERVAL, mld6_timeout_cb, NULL);
   } else {
@@ -568,7 +568,7 @@ mld6_delayed_report(struct mld_group *group, u16_t maxresp_in)
       ((group->timer == 0) || (maxresp < group->timer)))) {
     group->timer = maxresp;
     group->group_state = MLD6_GROUP_DELAYING_MEMBER;
-#if LWIP_MLD6_TIMERS_ONDEMAND
+#if LWIP_MLD6_TIMER_ONDEMAND
   if (!is_tmr_start) {
       sys_timeout(MLD6_TMR_INTERVAL, mld6_timeout_cb, NULL);
       is_tmr_start = true;

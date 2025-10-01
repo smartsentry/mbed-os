@@ -642,7 +642,7 @@ igmp_leavegroup_netif(struct netif *netif, const ip4_addr_t *groupaddr)
   }
 }
 
-#if LWIP_IGMP_TIMERS_ONDEMAND
+#if LWIP_IGMP_TIMER_ONDEMAND
 /**
  * Wrapper function with matching prototype which calls the actual callback
  */
@@ -684,7 +684,7 @@ igmp_tmr(void)
       group = group->next;
     }
   }
-#if LWIP_IGMP_TIMERS_ONDEMAND
+#if LWIP_IGMP_TIMER_ONDEMAND
   if (tmr_restart) {
     sys_timeout(IGMP_TMR_INTERVAL, igmp_timeout_cb, NULL);
   } else {
@@ -738,7 +738,7 @@ igmp_start_timer(struct igmp_group *group, u8_t max_time)
   if (group->timer == 0) {
     group->timer = 1;
 
-#if LWIP_IGMP_TIMERS_ONDEMAND
+#if LWIP_IGMP_TIMER_ONDEMAND
   if (!is_tmr_start) {
     sys_timeout(IGMP_TMR_INTERVAL, igmp_timeout_cb, NULL);
     is_tmr_start = true;
