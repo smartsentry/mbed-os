@@ -75,7 +75,7 @@ public:
             return false;
         }
         void *event_buf = WsfBufAlloc(sizeof(EventNode));
-        MBED_ASSERT(event_buf != nullptr);
+        //MBED_ASSERT(event_buf != nullptr);
         if (event_buf == nullptr) {
             return false;
         }

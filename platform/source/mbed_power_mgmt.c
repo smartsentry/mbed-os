@@ -143,7 +143,7 @@ static void sleep_tracker_print_stats(void)
 {
     if (sleep_manager_can_deep_sleep()) {
         mbed_error_printf("deepsleep unlocked");
-#ifdef MBED_DEBUG
+#ifdef MBED_DEBUGz
         mbed_error_printf(" but disabled with MBED_DEBUG");
 #endif
     } else {
