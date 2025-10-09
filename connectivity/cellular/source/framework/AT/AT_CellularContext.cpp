@@ -366,19 +366,27 @@ bool AT_CellularContext::get_context()
                 if (get_device()->get_property(pdp_type_t_to_cellular_property(pdp_type)) ||
                         ((pdp_type == IPV4V6_PDP_TYPE && (get_device()->get_property(AT_CellularDevice::PROPERTY_IPV4_PDP_TYPE) &&
                                                           get_device()->get_property(AT_CellularDevice::PROPERTY_IPV6_PDP_TYPE))) && !_nonip_req)) {
-                    _pdp_type = pdp_type;
-                    set_cid(cid);
+                    if(_cid==-1)//only first match
+                    {
+                        _pdp_type = pdp_type;
+                        set_cid(cid);
+                    }
                 }
             }
         }
     }
 
     _at.resp_stop();
-    if (_cid == -1) { // no suitable context was found so create a new one
-        if (!set_new_context(cid_max + 1)) {
-            return false;
-        }
+
+    if(_cid != 1) {//force CID to 1
+        set_new_context(1);
     }
+
+    // if (_cid == -1) { // no suitable context was found so create a new one
+    //     if (!set_new_context(cid_max + 1)) {
+    //         return false;
+    //     }
+    // }
 
     // save the apn
     if (apn_len > 0 && !_apn) {
