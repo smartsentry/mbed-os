@@ -99,6 +99,17 @@ public:
         return _queue.full();
     }
 
+   /** Get number of messages in the Mail.
+     *
+     * @return Number of items in the Mail
+     *
+     * @note You may call this function from ISR context.
+     */
+    uint32_t count() const
+    {
+        return _queue.count();
+    }
+
     /** Allocate a memory block of type T, without blocking.
      *
      * @param   millisec  Not used (see note).
