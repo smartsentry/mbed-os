@@ -379,7 +379,10 @@ bool AT_CellularContext::get_context()
     _at.resp_stop();
 
     if(_cid != 1) {//force CID to 1
-        set_new_context(1);
+        if (!set_new_context(1)) {
+            tr_error("Failed to create PDP context 1");
+            return false;
+        }
     }
 
     // if (_cid == -1) { // no suitable context was found so create a new one

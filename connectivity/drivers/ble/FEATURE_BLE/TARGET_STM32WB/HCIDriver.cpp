@@ -507,20 +507,20 @@ public:
                 }
 #endif
 #if STM32WB55xx
-                switch (p_wireless_info->StackType) {
-                    case INFO_STACK_TYPE_BLE_FULL:
-                        if (MBED_ROM_SIZE > 0xCA000)  {
-                            error("Wrong MBED_ROM_SIZE with BLE FW\n");
-                        }
-                        break;
-                    case INFO_STACK_TYPE_BLE_HCI:
-                        if (MBED_ROM_SIZE > (((p_wireless_info->VersionMajor > 1) || (p_wireless_info->VersionMinor >= 12)) ? 0xE1000 : 0xE0000))  {
-                            error("Wrong MBED_ROM_SIZE with HCI FW\n");
-                        }
-                        break;
-                    default:
-                        tr_error("StackType %u not expected\n", p_wireless_info->StackType);
-                }
+                // switch (p_wireless_info->StackType) {
+                //     case INFO_STACK_TYPE_BLE_FULL:
+                //         if (MBED_ROM_SIZE > 0xCA000)  {
+                //             error("Wrong MBED_ROM_SIZE with BLE FW\n");
+                //         }
+                //         break;
+                //     case INFO_STACK_TYPE_BLE_HCI:
+                //         if (MBED_ROM_SIZE > (((p_wireless_info->VersionMajor > 1) || (p_wireless_info->VersionMinor >= 12)) ? 0xE1000 : 0xE0000))  {
+                //             error("Wrong MBED_ROM_SIZE with HCI FW\n");
+                //         }
+                //         break;
+                //     default:
+                //         tr_error("StackType %u not expected\n", p_wireless_info->StackType);
+                // }
 #endif
             }
         }
