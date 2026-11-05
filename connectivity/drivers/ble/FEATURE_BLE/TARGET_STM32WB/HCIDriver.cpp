@@ -77,6 +77,9 @@
 static void evt_received(TL_EvtPacket_t *hcievt);
 static void syscmd_status_not(SHCI_TL_CmdStatus_t status);
 static void sysevt_received(void *pdata);
+/* Firmware reported running by the last CPU2 ready event */
+static volatile SHCI_SysEvt_Ready_Rsp_t sysevt_ready_rsp = WIRELESS_FW_RUNNING;
+static void sysevt_consume(void);
 static void acl_data_ack(void);
 static bool acl_data_wait(void);
 static void init_debug(void);
@@ -574,6 +577,21 @@ private:
             return;
         }
 
+        /*  FUS stays the active CPU2 firmware across resets after a wireless stack install (e.g. by
+         *  a programmer) until it is told to start the wireless stack. In that state the BLE
+         *  commands below are never answered and CPU2 never enters low power. FUS_START_WS resets
+         *  the whole device and the stack runs from the next boot; the wait below is a fallback */
+        if (sysevt_ready_rsp == FUS_FW_RUNNING) {
+            tr_warn("CPU2 is running FUS, starting the wireless stack (device will reset)");
+            fflush(stdout);             // get the warning out before the reset
+            sysevt_consume();           // the FUS ready event
+            SHCI_C2_FUS_StartWs();
+            if (!sysevt_wait() || sysevt_ready_rsp != WIRELESS_FW_RUNNING) {
+                error("ERROR starting WB wireless stack\n");
+                return;
+            }
+        }
+
         // TO DO : check if we need to disable LPM
         // requires to import as well all lpm driver
         tl_ble_Config.p_AclDataBuffer = aclDataBuffer;
@@ -817,9 +835,13 @@ static bool acl_data_wait(void)
 /*  WEAK callbacks from the BLE TL driver - will be called under Interrupt */
 static void sysevt_received(void *pdata)
 {
-    /* For now only READY event is received, so we know this is it */
+    /* Record which firmware CPU2 reports running: the wireless stack or FUS */
+    TL_EvtPacket_t *pckt = ((tSHCI_UserEvtRxParam *)pdata)->pckt;
+    TL_AsynchEvt_t *evt = (TL_AsynchEvt_t *)(pckt->evtserial.evt.payload);
+    if (evt->subevtcode == SHCI_SUB_EVT_CODE_READY) {
+        sysevt_ready_rsp = ((SHCI_C2_Ready_Evt_t *)evt->payload)->sysevt_ready_rsp;
+    }
     sys_event_sem.release();
-    /* But later on ... we'll have to parse the answer */
     return;
 }
 
@@ -834,6 +856,12 @@ static bool sysevt_wait(void)
         sys_event_sem.release();
         return true;
     }
+}
+
+/*  clears a received sysevt so the next sysevt_wait() waits for a new one */
+static void sysevt_consume(void)
+{
+    sys_event_sem.try_acquire();
 }
 
 /*  returns true if ssyevt was already received, which means M0 core is
