@@ -249,15 +249,10 @@ int SPIFBlockDevice::read(void *buffer, bd_addr_t addr, bd_size_t size)
         return BD_ERROR_DEVICE_ERROR;
     }
 	
-	if(powerMode !=SPIF_AWAKE)
-	{
-		exitPowerDown();
-	}
-	
-	
     int status = SPIF_BD_ERROR_OK;
     tr_debug("Read - Inst: 0x%xh", _read_instruction);
     _mutex->lock();
+	_wake();
 
     // Set Dummy Cycles for Specific Read Command Mode
     _dummy_and_mode_cycles = _read_dummy_and_mode_cycles;
@@ -267,6 +262,7 @@ int SPIFBlockDevice::read(void *buffer, bd_addr_t addr, bd_size_t size)
     // Set Dummy Cycles for all other command modes
     _dummy_and_mode_cycles = _write_dummy_and_mode_cycles;
 
+	_restart_idle_timer();
     _mutex->unlock();
     return status;
 }
@@ -283,6 +279,10 @@ int SPIFBlockDevice::program(const void *buffer, bd_addr_t addr, bd_size_t size)
     uint32_t chunk = 0;
 
     tr_debug("program - Buff: 0x%" PRIx32 "h, addr: %llu, size: %llu", (uint32_t)buffer, addr, size);
+
+	_mutex->lock();
+	_wake();
+	_mutex->unlock();
 
     while (size > 0) {
 
@@ -320,6 +320,10 @@ exit_point:
         _mutex->unlock();
     }
 
+	_mutex->lock();
+	_restart_idle_timer();
+	_mutex->unlock();
+
     return status;
 }
 
@@ -354,6 +358,10 @@ int SPIFBlockDevice::erase(bd_addr_t addr, bd_size_t size)
         tr_error("invalid erase - unaligned address and size");
         return SPIF_BD_ERROR_INVALID_ERASE_PARAMS;
     }
+
+	_mutex->lock();
+	_wake();
+	_mutex->unlock();
 
     // For each iteration erase the largest section supported by current region
     while (size > 0) {
@@ -409,6 +417,10 @@ exit_point:
     if (erase_failed) {
         _mutex->unlock();
     }
+
+	_mutex->lock();
+	_restart_idle_timer();
+	_mutex->unlock();
 
     return status;
 }
@@ -836,25 +848,75 @@ int SPIFBlockDevice::powerDown()
 
 int SPIFBlockDevice::deepPowerDown()
 {
+	_mutex->lock();
 	if (SPIF_BD_ERROR_OK !=  _spi_send_general_command(SPIF_UDPD, SPI_NO_ADDRESS_COMMAND, NULL, 0, NULL, 0)) {
 		tr_error("Sending UDPD command FAILED");
+		_mutex->unlock();
 		return -1;
 	}
 	powerMode = SPIF_DEEPPOWERDOWN;
+	_mutex->unlock();
 
     return 0;
 }
 int SPIFBlockDevice::exitPowerDown()
 {
+	_mutex->lock();
 	if (SPIF_BD_ERROR_OK !=  _spi_send_general_command(SPIF_RDPD, SPI_NO_ADDRESS_COMMAND, NULL, 0, NULL, 0)) {
 		tr_error("Sending RDPD command FAILED");
+		_mutex->unlock();
 		return -1;
 	}
 
     while(false == _is_mem_ready()) {
         rtos::ThisThread::sleep_for(1ms);
-    } 
+    }
 	powerMode = SPIF_AWAKE;
+	_mutex->unlock();
 
     return 0;
+}
+
+void SPIFBlockDevice::setAutoPowerDown(events::EventQueue *queue, std::chrono::milliseconds idle_time)
+{
+	_mutex->lock();
+	if (_idle_queue && _idle_event) {
+		_idle_queue->cancel(_idle_event);
+	}
+	_idle_event = 0;
+	_idle_queue = queue;
+	_idle_time = idle_time;
+	if (_idle_queue && _is_initialized && powerMode == SPIF_AWAKE) {
+		_restart_idle_timer();
+	}
+	_mutex->unlock();
+}
+
+void SPIFBlockDevice::_wake()
+{
+	if (powerMode != SPIF_AWAKE) {
+		exitPowerDown();
+	}
+}
+
+void SPIFBlockDevice::_restart_idle_timer()
+{
+	if (!_idle_queue) {
+		return;
+	}
+	if (_idle_event) {
+		_idle_queue->cancel(_idle_event);
+	}
+	// 0 if the queue is full: the device then stays awake until the next access restarts the timer
+	_idle_event = _idle_queue->call_in(_idle_time, mbed::callback(this, &SPIFBlockDevice::_idle_power_down));
+}
+
+void SPIFBlockDevice::_idle_power_down()
+{
+	_mutex->lock();
+	_idle_event = 0;
+	if (_is_initialized && powerMode == SPIF_AWAKE) {
+		deepPowerDown();
+	}
+	_mutex->unlock();
 }

@@ -22,6 +22,8 @@
 #include "drivers/DigitalOut.h"
 #include "blockdevice/internal/SFDP.h"
 #include "blockdevice/BlockDevice.h"
+#include "events/EventQueue.h"
+#include <chrono>
 
 #ifndef MBED_CONF_SPIF_DRIVER_SPI_MOSI
 #define MBED_CONF_SPIF_DRIVER_SPI_MOSI NC
@@ -220,7 +222,22 @@ public:
 	int exitPowerDown();
 	int deepPowerDown();
 
+	/** Put the device into deep power-down automatically once it has been idle for idle_time.
+	 *  read(), program() and erase() wake it when needed, so users of the device don't have to.
+	 *
+	 *  @param queue      Queue the power-down runs on (thread context, since it takes the mutex);
+	 *                    nullptr turns automatic power-down off
+	 *  @param idle_time  Time after the last access before powering down
+	 */
+	void setAutoPowerDown(events::EventQueue *queue, std::chrono::milliseconds idle_time = std::chrono::milliseconds(100));
+
 private:
+	// Wake the device if it is powered down; called with _mutex held
+	void _wake();
+	// Restart the idle timer after an access; called with _mutex held
+	void _restart_idle_timer();
+	// Idle timer expiry: deep power-down if still awake
+	void _idle_power_down();
     /****************************************/
     /* SFDP Detection and Parsing Functions */
     /****************************************/
@@ -296,6 +313,11 @@ private:
     uint32_t _init_ref_count;
     bool _is_initialized;
 	int powerMode;
+
+	// Automatic power-down after idle (setAutoPowerDown)
+	events::EventQueue *_idle_queue = nullptr;
+	std::chrono::milliseconds _idle_time{100};
+	int _idle_event = 0;
 };
 
 #endif  /* MBED_SPIF_BLOCK_DEVICE_H */
