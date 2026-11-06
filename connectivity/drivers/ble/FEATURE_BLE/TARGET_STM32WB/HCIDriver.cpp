@@ -21,6 +21,9 @@
 #include "ble/driver/CordioHCIDriver.h"
 #include "ble/driver/CordioHCITransportDriver.h"
 #include "rtos/Semaphore.h"
+#include "rtos/ThisThread.h"
+#include "platform/mbed_retarget.h"
+#include "platform/FileHandle.h"
 #include "hci_api.h"
 #include "hci_cmd.h"
 #include "hci_core.h"
@@ -583,7 +586,11 @@ private:
          *  the whole device and the stack runs from the next boot; the wait below is a fallback */
         if (sysevt_ready_rsp == FUS_FW_RUNNING) {
             tr_warn("CPU2 is running FUS, starting the wireless stack (device will reset)");
-            fflush(stdout);             // get the warning out before the reset
+            // Get the warning out before the reset: fflush only hands it to the console driver,
+            // sync() waits for its buffer to empty, then allow for the last bytes in the UART
+            fflush(stdout);
+            mbed::mbed_file_handle(STDOUT_FILENO)->sync();
+            rtos::ThisThread::sleep_for(std::chrono::milliseconds(5));
             sysevt_consume();           // the FUS ready event
             SHCI_C2_FUS_StartWs();
             if (!sysevt_wait() || sysevt_ready_rsp != WIRELESS_FW_RUNNING) {
